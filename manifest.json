@@ -1,0 +1,15 @@
+{
+	"name": "CanJS Devtools Extension",
+	"description" : "Devtools Extension for CanJS",
+	"version": "0.1.0",
+	"manifest_version": 2,
+    "devtools_page": "index.html",
+    "permissions": [
+		"activeTab",
+        "tabs",
+        "*://*/*"
+    ],
+    "background": {
+        "scripts": [ "background.js" ]
+    }
+}
