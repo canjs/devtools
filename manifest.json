@@ -8,15 +8,5 @@
 		"activeTab",
 		"tabs",
 		"*://*/*"
-	],
-	"background": {
-		"scripts": [ "background.js" ]
-	},
-	"content_scripts": [{
-		"matches": [ "<all_urls>" ],
-		"js": [ "canjs-devtools-content-script.js" ]
-	}],
-	"web_accessible_resources": [
-        "canjs-devtools-injected-script.js"
 	]
 }
