@@ -1,15 +1,22 @@
 {
 	"name": "CanJS Devtools Extension",
-	"description" : "Devtools Extension for CanJS",
-	"version": "0.1.0",
+	"description": "Devtools Extension for CanJS",
+	"version": "0.0.1",
 	"manifest_version": 2,
-    "devtools_page": "index.html",
-    "permissions": [
+	"devtools_page": "index.html",
+	"permissions": [
 		"activeTab",
-        "tabs",
-        "*://*/*"
-    ],
-    "background": {
-        "scripts": [ "background.js" ]
-    }
+		"tabs",
+		"*://*/*"
+	],
+	"background": {
+		"scripts": [ "background.js" ]
+	},
+	"content_scripts": [{
+		"matches": [ "<all_urls>" ],
+		"js": [ "canjs-devtools-content-script.js" ]
+	}],
+	"web_accessible_resources": [
+        "canjs-devtools-injected-script.js"
+	]
 }
