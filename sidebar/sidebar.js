@@ -3,39 +3,58 @@ var pageEval = chrome.devtools.inspectedWindow.eval;
 
 var POLLING_INTERVAL = 100;
 
-// helpers for working with the selected element $0
+can.Component.extend({
+    tag: "viewmodel-sidebar",
+
+    ViewModel: {
+        tagName: "string",
+        viewModel: can.DefineMap,
+
+        updateSelectedElementViewModel: function(key, value) {
+            selectedElement.setViewModelKeyValue(key, value);
+        }
+    },
+
+    view: `
+        {{#unless(tagName)}}
+            <h1>Select an Element to see its ViewModel</h1>
+        {{else}}
+            {{#unless(viewModel)}}
+                <h1><{{tagName}}> does not have a ViewModel</h1>
+            {{else}}
+                <h1><{{tagName}}> ViewModel</h1>
+
+                <form>
+                    {{#each(viewModel, key=key value=value)}}
+                        <p>
+                            {{key}}:
+                            <input
+                                value:from="value"
+                                on:change="scope.root.updateSelectedElementViewModel(key, scope.element.value)">
+                        </p>
+                    {{/each}}
+                </form>
+            {{/unless}}
+        {{/unless}}
+    `
+});
+
+// helpers for working with the selected element (`$0`)
 var selectedElement = {
     displayData: function displayData(elementData) {
         selectedElement.getData()
             .then(function(elementData) {
-                var tagName = elementData.tagName;
-                var viewModel = elementData.viewModel;
+                var componentViewModel = can.viewModel( document.querySelector("viewmodel-sidebar") );
+                can.Reflect.setKeyValue(componentViewModel, "tagName", elementData.tagName);
 
-                if (!elementData.viewModel) {
-                    var header = document.createElement("h1");
-                    var headerText = document.createTextNode("<" + tagName.toLowerCase() + "> does not have a ViewModel");
-                    header.appendChild(headerText);
-
-                    document.body.innerHTML = "";
-                    document.body.appendChild(header);
+                if (componentViewModel.viewModel) {
+                    if (elementData.viewModel) {
+                        componentViewModel.viewModel.update(elementData.viewModel);
+                    } else {
+                        can.Reflect.deleteKeyValue(componentViewModel, "viewModel");
+                    }
                 } else {
-                    var header = document.createElement("h1");
-                    var headerText = document.createTextNode("<" + tagName.toLowerCase() + "> ViewModel");
-                    header.appendChild(headerText);
-
-                    document.body.innerHTML = "";
-                    document.body.appendChild(header);
-
-                    Object.keys(viewModel).sort().forEach(function(key) {
-                        var p = document.createElement("p");
-                        var keyText = document.createTextNode(key + ": ");
-                        var valueText = document.createTextNode(viewModel[key]);
-
-                        p.appendChild(keyText);
-                        p.appendChild(valueText);
-
-                        document.body.appendChild(p);
-                    });
+                    can.Reflect.setKeyValue(componentViewModel, "viewModel", elementData.viewModel);
                 }
             })
             .then(function(elementData) {
@@ -80,6 +99,15 @@ var selectedElement = {
                                     }, enumerableViewModel);
                                 })
                                 .then(function(viewModel) {
+                                    var sortedViewModel = {};
+
+                                    Object.keys(viewModel).sort().forEach(function(key) {
+                                        sortedViewModel[key] = viewModel[key];
+                                    });
+
+                                    return sortedViewModel;
+                                })
+                                .then(function(viewModel) {
                                     resolve(viewModel);
                                 });
                         });
@@ -113,10 +141,23 @@ var selectedElement = {
             var tagName = data[0];
             var viewModel = data[1];
 
-            return {
+            var data = {
                 tagName: tagName,
-                viewModel: viewModel
             };
+
+            if (viewModel) {
+                data.viewModel = viewModel;
+            }
+
+            return data;
+        });
+    },
+
+    setViewModelKeyValue: function setViewModelKeyValue(key, value) {
+        pageEval("can.Reflect.setKeyValue( can.viewModel($0), '" + key + "', '" + value + "')", function(keyValue, isException) {
+            if (isException) {
+                console.error(isException);
+            }
         });
     }
 };
