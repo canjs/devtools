@@ -6,13 +6,19 @@ chrome.devtools.inspectedWindow.eval(
             chrome.devtools.panels.create(
                 "CanJS",
                 "icons/canjs_logo_black.png",
-                "no-can-global-error.html"
+                "panels/no-can-global-error.html"
             );
         } else {
             chrome.devtools.panels.elements.createSidebarPane("ViewModel",
                 function initializeSidebar(sidebar) {
                     sidebar.setPage("sidebar/sidebar.html");
                 }
+            );
+
+            chrome.devtools.panels.create(
+                "CanJS",
+                "icons/canjs_logo_black.png",
+                "panels/main.html"
             );
         }
     }
