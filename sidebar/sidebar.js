@@ -11,25 +11,32 @@ var selectedElement = {
                 var tagName = elementData.tagName;
                 var viewModel = elementData.viewModel;
 
-                var header = document.createElement("h1");
-                var headerText = document.createTextNode("<" + tagName.toLowerCase() + "> ViewModel");
-                header.appendChild(headerText);
+                if (!elementData.viewModel) {
+                    var header = document.createElement("h1");
+                    var headerText = document.createTextNode("<" + tagName.toLowerCase() + "> does not have a ViewModel");
+                    header.appendChild(headerText);
 
-                document.body.innerHTML = "";
-                document.body.appendChild(header);
+                    document.body.innerHTML = "";
+                    document.body.appendChild(header);
+                } else {
+                    var header = document.createElement("h1");
+                    var headerText = document.createTextNode("<" + tagName.toLowerCase() + "> ViewModel");
+                    header.appendChild(headerText);
 
-                for (var key in viewModel) {
-                    var p = document.createElement("p");
-                    var keyText = document.createTextNode(key + ": ");
-                    var valueText = document.createTextNode(viewModel[key]);
+                    document.body.innerHTML = "";
+                    document.body.appendChild(header);
 
-                    p.appendChild(keyText);
-                    p.appendChild(valueText);
+                    Object.keys(viewModel).sort().forEach(function(key) {
+                        var p = document.createElement("p");
+                        var keyText = document.createTextNode(key + ": ");
+                        var valueText = document.createTextNode(viewModel[key]);
 
-                    document.body.appendChild(p);
+                        p.appendChild(keyText);
+                        p.appendChild(valueText);
+
+                        document.body.appendChild(p);
+                    });
                 }
-
-                return elementData;
             })
             .then(function(elementData) {
                 // poll for changes
@@ -52,11 +59,47 @@ var selectedElement = {
 
     getViewModel: function getViewModel() {
         return new Promise(function(resolve, reject) {
-            pageEval("can.viewModel($0).serialize()", function(result, isException) {
+            pageEval("$0[can.Symbol.for('can.viewModel')]", function(hasViewModel, isException) {
+                if (hasViewModel) {
+                    pageEval("can.viewModel($0).serialize()", function(enumerableViewModel, isException) {
+                        if (isException) {
+                            reject(isException);
+                        }
+
+                        pageEval("can.Reflect.getOwnKeys( can.viewModel( $0 ) )", function(viewModelKeys, isException) {
+                            var missingKeysPromises = [];
+
+                            for (var i=0; i<viewModelKeys.length; i++) {
+                                missingKeysPromises.push( selectedElement.getKeyValue(viewModelKeys[i]) );
+                            }
+
+                            Promise.all(missingKeysPromises)
+                                .then(function(missingKeysData) {
+                                    return missingKeysData.reduce(function(data, cur) {
+                                        return Object.assign({}, data, cur);
+                                    }, enumerableViewModel);
+                                })
+                                .then(function(viewModel) {
+                                    resolve(viewModel);
+                                });
+                        });
+                    });
+                } else {
+                    resolve(null);
+                }
+            });
+        });
+    },
+
+    getKeyValue: function getKeyValue(key) {
+        return new Promise(function(resolve, reject) {
+            var viewModel;
+
+            pageEval("can.Reflect.getKeyValue( can.viewModel($0), '" + key + "')", function(keyValue, isException) {
                 if (isException) {
                     reject(isException);
                 }
-                resolve(result);
+                resolve({ [key]: keyValue });
             });
         });
     },
