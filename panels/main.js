@@ -41,11 +41,109 @@ var canHelpers = {
 };
 
 can.Component.extend({
-    tag: "devtools-panel",
+    tag: "devtools-tabs-panel",
+
+    ViewModel: {
+		connectedCallback(element) {
+			can.viewModel(element.parentNode).addPanel(this);
+		},
+		disconnectedCallback(element) {
+			can.viewModel(element.parentNode).removePanel(this);
+		},
+		title: "string",
+		active: {
+			default: false
+		}
+    },
+
+	view: "{{#if(active)}}<content></content>{{/if}}"
+});
+
+can.Component.extend({
+    tag: "devtools-tabs",
+
+	ViewModel: {
+		active: "any",
+		panels: {
+			default() {
+				return [];
+			}
+		},
+		addPanel: function(panel){
+			if( this.panels.length === 0 ) {
+				this.makeActive(panel);
+			}
+			this.panels.push(panel);
+		},
+		removePanel: function(panel){
+			var panels = this.panels;
+			panels.splice(panels.indexOf(panel),1);
+			if(panel === this.active){
+				if(panels.length){
+					this.makeActive(panels[0]);
+				} else {
+					this.active = undefined;
+				}
+			}
+		},
+		makeActive: function(panel){
+			this.active = panel;
+			this.panels.forEach(function(panel){
+				panel.active = false;
+			});
+			panel.active = true;
+		},
+		isActive: function(panel) {
+			return this.active == panel;
+		}
+	},
+
+	view: `
+		<ul>
+		  {{#panels}}
+			<li {{#if ../isActive(this)}}class='active'{{/if}}
+				on:click="../makeActive(this)">
+				<a href="#">{{title}}</a>
+			</li>
+		  {{/panels}}
+		</ul>
+		<content></content>
+	`
+});
+
+can.Component.extend({
+    tag: "devtools-log-stack",
+
+    ViewModel: {
+        refreshCount: { type: "number", default: 0 },
+
+        refresh() {
+            this.refreshCount++;
+        },
+
+        stack: {
+            value({ resolve, listenTo }) {
+                var updateStack = function() {
+                    canHelpers.queuesStack()
+                        .then(function(stack) {
+                            resolve(stack);
+                        });
+                };
+
+                listenTo("refreshCount", updateStack);
+
+                updateStack();
+            }
+        },
+
+        inspectStackFunction(taskIndex) {
+            canHelpers.inspectStackFunction(taskIndex);
+        }
+    },
 
     view: `
         <nav>
-            <button on:click="logStack()">Show can-queues.logStack()</button>
+            <button on:click="refresh()">Refresh</button>
         </nav>
 
         {{#if(stack)}}
@@ -79,25 +177,32 @@ can.Component.extend({
             {{/unless}}
         {{/if}}
 
-    `,
+    `
+});
 
-    ViewModel: {
-        stack: "any",
+can.Component.extend({
+    tag: "devtools-graph",
 
-        inspectStackFunction(taskIndex) {
-            canHelpers.inspectStackFunction(taskIndex);
-        },
+    ViewModel: {},
 
-        logStack() {
-            var vm = this;
+    view: `
+        This is a graph
+    `
+});
 
-            canHelpers.queuesStack()
-                .then(function(stack) {
-                    vm.stack = stack;
-                })
-                .catch(function(err) {
-                    console.error(err);
-                });
-        }
-    }
+can.Component.extend({
+    tag: "devtools-panel",
+
+    ViewModel: {},
+
+    view: `
+        <devtools-tabs>
+            <devtools-tabs-panel title:raw="Queues">
+                <devtools-log-stack></devtools-log-stack>
+            </devtools-tabs-panel>
+            <devtools-tabs-panel title:raw="Bindings">
+                <devtools-graph></devtools-graph>
+            </devtools-tabs-panel>
+        </devtools-tabs>
+    `
 });
