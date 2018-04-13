@@ -6,6 +6,47 @@ var iffeify = function(fn) {
     return "(" + fn.toString() + "())";
 };
 
+// helpers for working with the selected element (`$0`)
+var selectedElement = {
+    getTagName: function getTagName() {
+        return new Promise(function(resolve, reject) {
+            var viewModel;
+
+            pageEval("$0.tagName", function(result, isException) {
+                if (isException) {
+                    reject(isException);
+                }
+                resolve(result.toLowerCase());
+            });
+        });
+    },
+
+    debugFunction(fn, useViewModel, key) {
+        var args = [];
+
+        args.push( useViewModel ? "can.viewModel($0)" : "$0" );
+
+        if (key) {
+            args.push("'" + key + "'");
+        }
+
+        var command = "can.debug." + fn + "(" + args.join(", ") + ")";
+
+        return new Promise(function(resolve, reject) {
+            pageEval(command, function(result, isException) {
+                if (isException) {
+                    reject(isException);
+                }
+                resolve(result);
+            });
+        });
+    },
+
+    drawGraph(useViewModel, property) {
+        selectedElement.debugFunction("drawGraph", useViewModel, property);
+    }
+};
+
 // helpers for accessing main page's `can`
 var canHelpers = {
     queuesFilterStack: function() {
@@ -183,10 +224,46 @@ can.Component.extend({
 can.Component.extend({
     tag: "devtools-graph",
 
-    ViewModel: {},
+    ViewModel: {
+		connectedCallback(element) {
+            var vm = this;
+
+            selectedElement.getTagName()
+                .then(function(tagName) {
+                    vm.selectedElementTagName = tagName;
+                });
+
+            var displayGraph = function() {
+                selectedElement.drawGraph(this.useViewModel, this.selectedProperty);
+            };
+
+            this.listenTo("selectedElementTagName", displayGraph);
+            this.listenTo("selectedProperty", displayGraph);
+
+            return this.stopListening.bind( this );
+        },
+
+        useViewModel: { type: "boolean", default: true },
+
+        selectedProperty: "string",
+
+        selectedElementTagName: "string"
+	},
 
     view: `
-        This is a graph
+        <nav>
+            <label>
+                ViewModel?
+                <input type="checkbox" checked:bind="useViewModel">
+            </label>
+            <label>
+                Property:
+                <input type="text" value:bind="selectedProperty">
+            </label>
+        </nav>
+        <h1>
+            Graph for <{{selectedElementTagName}}>{{#if(useViewModel)}}'s ViewModel{{/if}}{{#if(selectedProperty)}}'s "{{selectedProperty}}" property{{/if}}
+        </h1>
     `
 });
 
