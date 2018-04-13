@@ -3,66 +3,8 @@ var pageEval = chrome.devtools.inspectedWindow.eval;
 
 var POLLING_INTERVAL = 100;
 
-can.Component.extend({
-    tag: "viewmodel-sidebar",
-
-    ViewModel: {
-        tagName: "string",
-        viewModel: can.DefineMap,
-
-        updateSelectedElementViewModel: function(key, value) {
-            selectedElement.setViewModelKeyValue(key, value);
-        }
-    },
-
-    view: `
-        {{#unless(tagName)}}
-            <h1>Select an Element to see its ViewModel</h1>
-        {{else}}
-            {{#unless(viewModel)}}
-                <h1><{{tagName}}> does not have a ViewModel</h1>
-            {{else}}
-                <h1><{{tagName}}> ViewModel</h1>
-
-                <form>
-                    {{#each(viewModel, key=key value=value)}}
-                        <p>
-                            {{key}}:
-                            <input
-                                value:from="value"
-                                on:change="scope.root.updateSelectedElementViewModel(key, scope.element.value)">
-                        </p>
-                    {{/each}}
-                </form>
-            {{/unless}}
-        {{/unless}}
-    `
-});
-
 // helpers for working with the selected element (`$0`)
 var selectedElement = {
-    displayData: function displayData(elementData) {
-        selectedElement.getData()
-            .then(function(elementData) {
-                var componentViewModel = can.viewModel( document.querySelector("viewmodel-sidebar") );
-                can.Reflect.setKeyValue(componentViewModel, "tagName", elementData.tagName);
-
-                if (componentViewModel.viewModel) {
-                    if (elementData.viewModel) {
-                        componentViewModel.viewModel.update(elementData.viewModel);
-                    } else {
-                        can.Reflect.deleteKeyValue(componentViewModel, "viewModel");
-                    }
-                } else {
-                    can.Reflect.setKeyValue(componentViewModel, "viewModel", elementData.viewModel);
-                }
-            })
-            .then(function(elementData) {
-                // poll for changes
-                setTimeout(selectedElement.displayData, POLLING_INTERVAL);
-            });
-    },
-
     getTagName: function getTagName() {
         return new Promise(function(resolve, reject) {
             var viewModel;
@@ -162,7 +104,68 @@ var selectedElement = {
     }
 };
 
-// on load, display the data for the selected element
-// this will set up polling so data will change when selected element changes
-// or element's data (viewModel, etc) changes
-selectedElement.displayData();
+can.Component.extend({
+    tag: "viewmodel-sidebar",
+
+    ViewModel: {
+        // on load, display the data for the selected element
+        // and set up polling so data will change when selected element changes
+        // or element's data (viewModel, etc) changes
+        connectedCallback() {
+            var vm = this;
+
+            var getSelectedElementData = function() {
+                selectedElement.getData()
+                    .then(function(elementData) {
+                        can.Reflect.setKeyValue(vm, "tagName", elementData.tagName);
+
+                        if (vm.viewModel) {
+                            if (elementData.viewModel) {
+                                vm.viewModel.update(elementData.viewModel);
+                            } else {
+                                can.Reflect.deleteKeyValue(vm, "viewModel");
+                            }
+                        } else {
+                            can.Reflect.setKeyValue(vm, "viewModel", elementData.viewModel);
+                        }
+                    })
+                    .then(function(elementData) {
+                        // poll for changes
+                        setTimeout(getSelectedElementData, POLLING_INTERVAL);
+                    });
+            };
+
+            getSelectedElementData();
+        },
+
+        tagName: "string",
+        viewModel: can.DefineMap,
+
+        updateSelectedElementViewModel: function(key, value) {
+            selectedElement.setViewModelKeyValue(key, value);
+        }
+    },
+
+    view: `
+        {{#unless(tagName)}}
+            <h1>Select an Element to see its ViewModel</h1>
+        {{else}}
+            {{#unless(viewModel)}}
+                <h1><{{tagName}}> does not have a ViewModel</h1>
+            {{else}}
+                <h1><{{tagName}}> ViewModel</h1>
+
+                <form>
+                    {{#each(viewModel, key=key value=value)}}
+                        <p>
+                            {{key}}:
+                            <input
+                                value:from="value"
+                                on:change="scope.root.updateSelectedElementViewModel(key, scope.element.value)">
+                        </p>
+                    {{/each}}
+                </form>
+            {{/unless}}
+        {{/unless}}
+    `
+});
