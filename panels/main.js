@@ -21,18 +21,13 @@ var selectedElement = {
         });
     },
 
-    debugFunction(fn, useViewModel, key) {
-        var args = [];
-
-        args.push( useViewModel ? "can.viewModel($0)" : "$0" );
-
-        if (key) {
-            args.push("'" + key + "'");
-        }
-
-        var command = "can.debug." + fn + "(" + args.join(", ") + ")";
+    getGraph(useViewModel, property) {
+        var objArg = useViewModel ? "can.viewModel($0)" : "$0";
+        var keyArg = "'" + property + "'";
+        var command = "can.debug.formatGraph( can.debug.getGraph(" + objArg + ", " + keyArg + ") )";
 
         return new Promise(function(resolve, reject) {
+            // TODO - check to make sure `getGraph` exists
             pageEval(command, function(result, isException) {
                 if (isException) {
                     reject(isException);
@@ -40,10 +35,6 @@ var selectedElement = {
                 resolve(result);
             });
         });
-    },
-
-    drawGraph(useViewModel, property) {
-        selectedElement.debugFunction("drawGraph", useViewModel, property);
     }
 };
 
@@ -234,7 +225,30 @@ can.Component.extend({
                 });
 
             var displayGraph = function() {
-                selectedElement.drawGraph(this.useViewModel, this.selectedProperty);
+                selectedElement.getGraph(this.useViewModel, this.selectedProperty)
+                    .then(function(data) {
+                        var out = element.querySelector("#out");
+                        out.innerHTML = "";
+
+                        var container = document.createElement("div");
+                        container.style.position = "absolute"
+                        container.style.height = "80%"
+                        container.style.width = "98%"
+                        out.appendChild(container);
+
+						new vis.Network(
+							container,
+							{
+								nodes: new vis.DataSet( data.nodes ),
+								edges: new vis.DataSet( data.edges )
+							},
+							{
+								physics: {
+									solver: "repulsion"
+								}
+							}
+						);
+                    });
             };
 
             this.listenTo("selectedElementTagName", displayGraph);
@@ -264,6 +278,7 @@ can.Component.extend({
         <h1>
             Graph for <{{selectedElementTagName}}>{{#if(useViewModel)}}'s ViewModel{{/if}}{{#if(selectedProperty)}}'s "{{selectedProperty}}" property{{/if}}
         </h1>
+        <div id="out"></div>
     `
 });
 
