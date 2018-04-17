@@ -1,24 +1,35 @@
-// initialize the ViewModel sidebar
+// only add CanJS Devtools panel and sidebar if `window.can` is available in the user's page
 chrome.devtools.inspectedWindow.eval(
     "can",
     function(result, isException) {
-        if (isException) {
-            chrome.devtools.panels.create(
-                "CanJS",
-                "icons/canjs_logo_black.png",
-                "panels/no-can-global-error.html"
-            );
-        } else {
-            chrome.devtools.panels.elements.createSidebarPane("ViewModel",
+        if (!isException) {
+            // create ViewModel panel
+            chrome.devtools.panels.elements.createSidebarPane("CanJS ViewModel",
                 function initializeSidebar(sidebar) {
-                    sidebar.setPage("sidebar/sidebar.html");
+                    sidebar.setPage("viewmodel-panel/index.html");
                 }
             );
 
-            chrome.devtools.panels.create(
-                "CanJS",
-                "icons/canjs_logo_black.png",
-                "panels/main.html"
+            // create can-queues.logStack panel
+			chrome.devtools.panels.sources.createSidebarPane("CanJS Queues Stack",
+                function initializeQueuesPanel(sidebar) {
+                    sidebar.setPage("queues-panel/index.html");
+                    sidebar.setHeight("50vh");
+                }
+            );
+
+            // check that can-debug functions are available
+            chrome.devtools.inspectedWindow.eval(
+                "can.debug.getGraph && can.debug.formatGraph",
+                function(result, isException) {
+                    if (!isException) {
+                        chrome.devtools.panels.elements.createSidebarPane("CanJS Bindings Graph",
+                            function initializeQueuesPanel(sidebar) {
+                                sidebar.setPage("bindings-graph/index.html");
+                            }
+                        );
+                    }
+                }
             );
         }
     }

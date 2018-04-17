@@ -105,12 +105,23 @@ var selectedElement = {
 };
 
 can.Component.extend({
-    tag: "viewmodel-sidebar",
+    tag: "canjs-devtools-viewmodel-panel",
+
+    view: `
+        <viewmodel-editor
+			tagName:from="tagName"
+			viewModelData:from="viewModelData"
+			setKeyValue:from="setKeyValue"
+        ></viewmodel-editor>
+    `,
 
     ViewModel: {
-        // on load, display the data for the selected element
-        // and set up polling so data will change when selected element changes
-        // or element's data (viewModel, etc) changes
+        tagName: "string",
+
+        viewModelData: "any",
+
+        setKeyValue: selectedElement.setViewModelKeyValue,
+
         connectedCallback() {
             var vm = this;
 
@@ -119,14 +130,14 @@ can.Component.extend({
                     .then(function(elementData) {
                         can.Reflect.setKeyValue(vm, "tagName", elementData.tagName);
 
-                        if (vm.viewModel) {
+                        if (vm.viewModelData) {
                             if (elementData.viewModel) {
-                                vm.viewModel.update(elementData.viewModel);
+                                can.Reflect.update(vm.viewModelData, elementData.viewModel);
                             } else {
-                                can.Reflect.deleteKeyValue(vm, "viewModel");
+                                can.Reflect.deleteKeyValue(vm, "viewModelData");
                             }
                         } else {
-                            can.Reflect.setKeyValue(vm, "viewModel", elementData.viewModel);
+                            can.Reflect.setKeyValue(vm, "viewModelData", elementData.viewModel);
                         }
                     })
                     .then(function(elementData) {
@@ -136,36 +147,6 @@ can.Component.extend({
             };
 
             getSelectedElementData();
-        },
-
-        tagName: "string",
-        viewModel: can.DefineMap,
-
-        updateSelectedElementViewModel: function(key, value) {
-            selectedElement.setViewModelKeyValue(key, value);
         }
-    },
-
-    view: `
-        {{#unless(tagName)}}
-            <h1>Select an Element to see its ViewModel</h1>
-        {{else}}
-            {{#unless(viewModel)}}
-                <h1><{{tagName}}> does not have a ViewModel</h1>
-            {{else}}
-                <h1><{{tagName}}> ViewModel</h1>
-
-                <form>
-                    {{#each(viewModel, key=key value=value)}}
-                        <p>
-                            {{key}}:
-                            <input
-                                value:from="value"
-                                on:change="scope.root.updateSelectedElementViewModel(key, scope.element.value)">
-                        </p>
-                    {{/each}}
-                </form>
-            {{/unless}}
-        {{/unless}}
-    `
+    }
 });

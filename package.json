@@ -1,0 +1,23 @@
+{
+  "name": "can-devtools",
+  "version": "1.0.0",
+  "description": "CanJS Devtools",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/canjs/devtools.git"
+  },
+  "author": {
+    "name": "Bitovi",
+    "email": "contact@bitovi.com",
+    "web": "http://bitovi.com/"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/canjs/devtools/issues"
+  },
+  "homepage": "https://canjs.com",
+  "dependencies": {
+    "can-devtools-components": "file:../can-devtools-components"
+  }
+}
