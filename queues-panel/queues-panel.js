@@ -33,7 +33,7 @@ var canHelpers = {
         });
     },
 
-    inspectStackFunction(index) {
+    inspectTask(index) {
         pageEval("inspect( can.queues.stack()[" + index + "].fn )", function(result, isException) {
             if (isException) {
                 console.error(isException);
@@ -48,15 +48,15 @@ can.Component.extend({
     view: `
         <queues-logstack
             stack:from="stack"
-			functionClickHandler:from="inspectStackFunction"
+			inspectTask:from="inspectTask"
         ></queues-logstack>
     `,
 
     ViewModel: {
 	    stack: can.DefineList,
 
-        inspectStackFunction(taskIndex) {
-            canHelpers.inspectStackFunction(taskIndex);
+        inspectTask(taskIndex) {
+            canHelpers.inspectTask(taskIndex);
         },
 
         connectedCallback() {
