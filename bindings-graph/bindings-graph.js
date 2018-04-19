@@ -137,6 +137,8 @@ can.Component.extend({
 
             // update graph data when user selects a new property
             this.listenTo("selectedKey", loadGraphData);
+
+            return this.stopListening.bind( this );
         }
     },
 

@@ -117,6 +117,7 @@ can.Component.extend({
 
         connectedCallback() {
             var vm = this;
+            var timeoutId;
 
             var getSelectedElementData = function() {
                 selectedElement.getData()
@@ -135,11 +136,15 @@ can.Component.extend({
                     })
                     .then(function(elementData) {
                         // poll for changes
-                        setTimeout(getSelectedElementData, POLLING_INTERVAL);
+                        timeoutId = setTimeout(getSelectedElementData, POLLING_INTERVAL);
                     });
             };
 
             getSelectedElementData();
+
+            return function disconnect() {
+                clearTimeout(timeoutId);
+            };
         }
     }
 });

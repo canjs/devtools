@@ -60,6 +60,7 @@ can.Component.extend({
         },
 
         connectedCallback() {
+            var timeoutId;
             var vm = this;
 
             var updateStack = function() {
@@ -70,10 +71,14 @@ can.Component.extend({
                         }
                     });
 
-                setTimeout(updateStack, POLLING_INTERVAL);
+                timeoutId = setTimeout(updateStack, POLLING_INTERVAL);
             };
 
             updateStack();
+
+            return function disconnect() {
+                clearTimeout(timeoutId);
+            };
         }
     }
 });
