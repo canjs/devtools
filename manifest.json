@@ -1,13 +1,14 @@
 {
-	"name": "CanJS Devtools Extension",
-	"description": "Devtools Extension for CanJS",
-	"version": "0.0.1",
-	"manifest_version": 2,
-	"devtools_page": "index.html",
-	"permissions": [
-		"activeTab",
-		"tabs",
-		"*://*/*"
-	],
-	"content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'"
+    "name": "CanJS Devtools Extension",
+    "description": "Devtools Extension for CanJS",
+    "version": "0.0.1",
+    "icons": {
+        "16": "images/canjs_logo_blue-16.png",
+        "48": "images/canjs_logo_blue-48.png",
+        "128": "images/canjs_logo_blue-128.png"
+    },
+    "manifest_version": 2,
+    "devtools_page": "index.html",
+    "permissions": [],
+    "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'"
 }
