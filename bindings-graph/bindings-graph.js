@@ -1,8 +1,8 @@
 // run an expression in the page
 var pageEval = chrome.devtools.inspectedWindow.eval;
 
-// tostring a function and wrap in an IFFE so it can be evaled
-var iffeify = function(fn) {
+// tostring a function and wrap in an IIFE so it can be evaled
+var iifeify = function(fn) {
     return "(" + fn.toString() + "())";
 };
 
@@ -58,7 +58,7 @@ var selectedElement = {
 
     getElementKeys() {
         return new Promise(function(resolve, reject) {
-            pageEval( iffeify( selectedElement.getElementKeysHelper ), function(keys, isException) {
+            pageEval( iifeify( selectedElement.getElementKeysHelper ), function(keys, isException) {
                 if (isException) {
                     reject(isException);
                 }

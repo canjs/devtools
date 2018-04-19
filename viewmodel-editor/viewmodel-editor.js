@@ -3,103 +3,96 @@ var pageEval = chrome.devtools.inspectedWindow.eval;
 
 var POLLING_INTERVAL = 100;
 
+// tostring a function and wrap in an IIFE so it can be evaled
+var iifeify = function(fn) {
+	var args = Array.prototype.slice.call(arguments, 1);
+    return "(" + fn.toString() + "(" +
+		args.map(function(arg) { return "'" + arg + "'"; }).join(", ") +
+	"))";
+};
+
 // helpers for working with the selected element (`$0`)
 var selectedElement = {
-    getTagName: function getTagName() {
-        return new Promise(function(resolve, reject) {
-            var viewModel;
+    getElementWithViewModelData: function() {
+		var elementWithViewModel = (function getElementWithViewModel(el) {
+			el = el ? el : $0;
+			var vm = el[can.Symbol.for("can.viewModel")];
+			return vm ?
+				el :
+				el.parentNode ?
+				getElementWithViewModel(el.parentNode) :
+				undefined;
+		}());
 
-            pageEval("$0.tagName", function(result, isException) {
-                if (isException) {
-                    reject(isException);
-                }
-                resolve(result.toLowerCase());
+		var getViewModelData = function(el) {
+			var viewModel = can.viewModel(el);
+			var viewModelData = viewModel.serialize();
+			var viewModelKeys = can.Reflect.getOwnKeys( can.viewModel( el ) );
+
+			for (var i=0; i<viewModelKeys.length; i++) {
+				var key = viewModelKeys[i];
+				if (!viewModelData[ key ]) {
+					viewModelData[key] = can.Reflect.getKeyValue( viewModel, key );
+				}
+			}
+
+            var sortedViewModel = {};
+
+            Object.keys(viewModelData).sort().forEach(function(key) {
+                sortedViewModel[key] = viewModelData[key];
             });
-        });
-    },
 
-    getViewModel: function getViewModel() {
-        return new Promise(function(resolve, reject) {
-            pageEval("$0[can.Symbol.for('can.viewModel')]", function(hasViewModel, isException) {
-                if (hasViewModel) {
-                    pageEval("can.viewModel($0).serialize()", function(enumerableViewModel, isException) {
-                        if (isException) {
-                            reject(isException);
-                        }
+            return sortedViewModel;
+		};
 
-                        pageEval("can.Reflect.getOwnKeys( can.viewModel( $0 ) )", function(viewModelKeys, isException) {
-                            var missingKeysPromises = [];
-
-                            for (var i=0; i<viewModelKeys.length; i++) {
-                                missingKeysPromises.push( selectedElement.getKeyValue(viewModelKeys[i]) );
-                            }
-
-                            Promise.all(missingKeysPromises)
-                                .then(function(missingKeysData) {
-                                    return missingKeysData.reduce(function(data, cur) {
-                                        return Object.assign({}, data, cur);
-                                    }, enumerableViewModel);
-                                })
-                                .then(function(viewModel) {
-                                    var sortedViewModel = {};
-
-                                    Object.keys(viewModel).sort().forEach(function(key) {
-                                        sortedViewModel[key] = viewModel[key];
-                                    });
-
-                                    return sortedViewModel;
-                                })
-                                .then(function(viewModel) {
-                                    resolve(viewModel);
-                                });
-                        });
-                    });
-                } else {
-                    resolve(null);
-                }
-            });
-        });
-    },
-
-    getKeyValue: function getKeyValue(key) {
-        return new Promise(function(resolve, reject) {
-            var viewModel;
-
-            pageEval("can.Reflect.getKeyValue( can.viewModel($0), '" + key + "')", function(keyValue, isException) {
-                if (isException) {
-                    reject(isException);
-                }
-                resolve({ [key]: keyValue });
-            });
-        });
+        if (elementWithViewModel) {
+            return {
+				tagName: elementWithViewModel.tagName,
+                viewModel: getViewModelData( elementWithViewModel )
+            };
+        } else {
+            return {
+                tagName: $0.tagName
+            };
+        }
     },
 
     getData: function getData() {
-        return Promise.all([
-            selectedElement.getTagName(),
-            selectedElement.getViewModel()
-        ])
-        .then(function(data) {
-            var tagName = data[0];
-            var viewModel = data[1];
+        return new Promise(function(resolve, reject) {
+            pageEval(iifeify( selectedElement.getElementWithViewModelData ), function(data, isException) {
+				if (isException) {
+                    reject(isException);
+                }
 
-            var data = {
-                tagName: tagName,
-            };
-
-            if (viewModel) {
-                data.viewModel = viewModel;
-            }
-
-            return data;
+                resolve(data);
+            });
         });
     },
 
+    setElementWithViewModelKeyValue: function(key, value) {
+		var elementWithViewModel = (function getElementWithViewModel(el) {
+			el = el ? el : $0;
+			var vm = el[can.Symbol.for("can.viewModel")];
+			return vm ?
+				el :
+				el.parentNode ?
+				getElementWithViewModel(el.parentNode) :
+				undefined;
+		}());
+
+		var viewModel = can.viewModel( elementWithViewModel );
+		can.Reflect.setKeyValue( viewModel, key, value );
+    },
+
     setViewModelKeyValue: function setViewModelKeyValue(key, value) {
-        pageEval("can.Reflect.setKeyValue( can.viewModel($0), '" + key + "', '" + value + "')", function(keyValue, isException) {
-            if (isException) {
-                console.error(isException);
-            }
+        return new Promise(function(resolve, reject) {
+            pageEval(iifeify( selectedElement.setElementWithViewModelKeyValue, key, value ), function(data, isException) {
+				if (isException) {
+                    reject(isException);
+                }
+
+                resolve(data);
+            });
         });
     }
 };
@@ -118,7 +111,7 @@ can.Component.extend({
     ViewModel: {
         tagName: "string",
 
-        viewModelData: "any",
+        viewModelData: "observable",
 
         setKeyValue: selectedElement.setViewModelKeyValue,
 
