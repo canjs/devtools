@@ -1,4 +1,4 @@
-// only add CanJS Devtools sidebars if `window.can` is available in the user's page
+// only add CanJS DevTools sidebars if `window.can` is available in the user's page
 chrome.devtools.inspectedWindow.eval(
     "can",
     function(result, isException) {

@@ -1,7 +1,7 @@
 {
   "name": "can-devtools",
   "version": "1.0.0",
-  "description": "CanJS Devtools",
+  "description": "CanJS DevTools",
   "main": "index.js",
   "repository": {
     "type": "git",
