@@ -43,7 +43,7 @@ var canHelpers = {
 };
 
 can.Component.extend({
-    tag: "canjs-devtools-queues-panel",
+    tag: "canjs-devtools-queues-stack",
 
     view: `
         <queues-logstack

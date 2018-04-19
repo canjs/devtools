@@ -105,7 +105,7 @@ var selectedElement = {
 };
 
 can.Component.extend({
-    tag: "canjs-devtools-viewmodel-panel",
+    tag: "canjs-devtools-viewmodel-editor",
 
     view: `
         <viewmodel-editor

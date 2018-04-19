@@ -1,19 +1,19 @@
-// only add CanJS Devtools panel and sidebar if `window.can` is available in the user's page
+// only add CanJS Devtools sidebars if `window.can` is available in the user's page
 chrome.devtools.inspectedWindow.eval(
     "can",
     function(result, isException) {
         if (!isException) {
-            // create ViewModel panel
+            // create ViewModel Editor sidebar
             chrome.devtools.panels.elements.createSidebarPane("CanJS ViewModel",
                 function initializeSidebar(sidebar) {
-                    sidebar.setPage("viewmodel-panel/index.html");
+                    sidebar.setPage("viewmodel-editor/index.html");
                 }
             );
 
-            // create can-queues.logStack panel
+            // create can-queues stack sidebar
 			chrome.devtools.panels.sources.createSidebarPane("CanJS Queues Stack",
                 function initializeQueuesPanel(sidebar) {
-                    sidebar.setPage("queues-panel/index.html");
+                    sidebar.setPage("queues-stack/index.html");
                     sidebar.setHeight("50vh");
                 }
             );
@@ -23,6 +23,7 @@ chrome.devtools.inspectedWindow.eval(
                 "can.debug.getGraph && can.debug.formatGraph",
                 function(result, isException) {
                     if (!isException) {
+                        // Add Bindings Graph sidebar
                         chrome.devtools.panels.elements.createSidebarPane("CanJS Bindings Graph",
                             function initializeQueuesPanel(sidebar) {
                                 sidebar.setPage("bindings-graph/index.html");
