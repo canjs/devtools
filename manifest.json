@@ -3,9 +3,9 @@
     "description": "DevTools Extension for CanJS",
     "version": "0.0.1",
     "icons": {
-        "16": "images/canjs_logo_blue-16.png",
-        "48": "images/canjs_logo_blue-48.png",
-        "128": "images/canjs_logo_blue-128.png"
+        "16": "images/canjs-16.png",
+        "48": "images/canjs-48.png",
+        "128": "images/canjs-128.png"
     },
     "manifest_version": 2,
     "devtools_page": "index.html",
