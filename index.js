@@ -1,37 +1,50 @@
-// only add CanJS DevTools sidebars if `window.can` is available in the user's page
-chrome.devtools.inspectedWindow.eval(
-    "can",
-    function(result, isException) {
-        if (!isException) {
-            // create ViewModel Editor sidebar
-            chrome.devtools.panels.elements.createSidebarPane("CanJS ViewModel",
-                function initializeSidebar(sidebar) {
-                    sidebar.setPage("viewmodel-editor/index.html");
-                }
-            );
+var ifGlobals = function(globals, cb) {
+    var command = globals.map(function(global) {
+        return "typeof " + global + " !== 'undefined'";
+    }).join(" && ");
 
-            // create can-queues stack sidebar
-			chrome.devtools.panels.sources.createSidebarPane("CanJS Queues Stack",
-                function initializeQueuesPanel(sidebar) {
-                    sidebar.setPage("queues-stack/index.html");
-                    sidebar.setHeight("50vh");
-                }
-            );
-
-            // check that can-debug functions are available
-            chrome.devtools.inspectedWindow.eval(
-                "can.debug.getGraph && can.debug.formatGraph",
-                function(result, isException) {
-                    if (!isException) {
-                        // Add Bindings Graph sidebar
-                        chrome.devtools.panels.elements.createSidebarPane("CanJS Bindings Graph",
-                            function initializeQueuesPanel(sidebar) {
-                                sidebar.setPage("bindings-graph/index.html");
-                            }
-                        );
-                    }
-                }
-            );
+    chrome.devtools.inspectedWindow.eval(
+        command,
+        function(result, isException) {
+            if (!isException && result) {
+                cb();
+            }
         }
+    )
+};
+
+ifGlobals(
+    [ "can", "can.Symbol", "can.viewModel", "can.Reflect" ],
+    function() {
+        chrome.devtools.panels.elements.createSidebarPane("CanJS ViewModel",
+            function initializeSidebar(sidebar) {
+                sidebar.setPage("viewmodel-editor/index.html");
+            }
+        );
+    }
+);
+
+ifGlobals(
+    [ "can", "can.queues", "can.Reflect" ],
+    function() {
+        // create can-queues stack sidebar
+        chrome.devtools.panels.sources.createSidebarPane("CanJS Queues Stack",
+            function initializeQueuesPanel(sidebar) {
+                sidebar.setPage("queues-stack/index.html");
+                sidebar.setHeight("50vh");
+            }
+        );
+    }
+);
+
+ifGlobals(
+    [ "can", "can.Symbol", "can.Reflect", "can.viewModel", "can.debug", "can.debug.formatGraph", "can.debug.getGraph" ],
+    function() {
+        // Add Bindings Graph sidebar
+        chrome.devtools.panels.elements.createSidebarPane("CanJS Bindings Graph",
+            function initializeQueuesPanel(sidebar) {
+                sidebar.setPage("bindings-graph/index.html");
+            }
+        );
     }
 );
