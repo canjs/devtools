@@ -11,29 +11,39 @@ var ifGlobals = function(globals, cb) {
     )
 };
 
-var displayedSidebars = {};
+var sidebarCache = {};
 
 var initializeSidebar = function(name, globals, location, indexPage, errorPage) {
+    // if the sidebar was already created, set it to the correct page
+    // if it was not created, only create it if on a page with the `can` globals
     ifGlobals(globals, function(globalsExist) {
-        // if the sidebar was already created, set it to the correct page
-        // if it was not created, only create it if on a page with the `can` globals
-        var existingSidebar = displayedSidebars[name]
-        if (existingSidebar) {
-            existingSidebar.setPage(globalsExist ? indexPage : errorPage);
+        var cached = sidebarCache[name]
+
+        if (cached) {
+            var page = globalsExist ? indexPage : errorPage;
+
+            // if the page that should be displayed changes, call setPage again
+            if (cached.page !== page) {
+                cached.page = page;
+                cached.sidebar.setPage(page);
+            }
         } else {
             if (globalsExist) {
                 chrome.devtools.panels[location].createSidebarPane(name, function(sidebar) {
                     sidebar.setPage(indexPage);
 
-                    // store sidebar so the page can be updated if the user navigates to a page without the required globals
-                    displayedSidebars[name] = sidebar;
+                    // store sidebar so the page can be updated if the sidebar should no longer be shown
+                    sidebarCache[name] = {
+                        sidebar: sidebar,
+                        page: indexPage
+                    };
                 });
             }
         }
-    })
+    });
 };
 
-var initialize = function() {
+(function createSidebarsIfGlobalsExist() {
     initializeSidebar(
         "CanJS ViewModel",
         [ "can", "can.Symbol", "can.viewModel", "can.Reflect" ],
@@ -58,15 +68,6 @@ var initialize = function() {
         "queues-stack/index.html",
         "queues-stack/error.html"
     );
-};
 
-// initialize the sidebar panels
-initialize();
-
-// if user navigates to a new page, reload devtools sidebars
-// so that data loaded in `connectedCallback`s will be refreshed
-// and the sidebars will be correctly enabled/disabled based on `can` global
-chrome.devtools.network.onNavigated.addListener(function() {
-    // wait for new page to (hopefully) load before re-initializing panels
-    setTimeout(initialize, 2000);
-});
+    setTimeout(createSidebarsIfGlobalsExist, 2000);
+}());
