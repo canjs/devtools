@@ -1,3 +1,42 @@
+// URLs of all frames that have registered that they
+// have a global `can` present
+var registeredFrameURLs = [];
+
+// when user selects a new element in the Elements panel, pass it to the 
+// "injected-script" so that viewModel and other data and bindings
+// can be read from the correct element
+chrome.devtools.panels.elements.onSelectionChanged.addListener(function() {
+    // call `setSelectedElement` in each registered frame
+    // this will set the selected element in the correct frame
+    // and remove the selected element in other frames since $0 will be null
+    for (var i=0; i<registeredFrameURLs.length; i++) {
+        chrome.devtools.inspectedWindow.eval(
+            "typeof __CANJS_DEVTOOLS__ !== 'undefined' && __CANJS_DEVTOOLS__.setSelectedElement($0)",
+            { frameURL: registeredFrameURLs[i] },
+            function(result, isException) {
+                if (isException) {
+                    console.error(isException);
+                }
+            }
+        );
+    }
+});
+
+// listen to messages from the injected-script
+chrome.runtime.onMessage.addListener(function(msg, sender) {
+    switch(msg.type) {
+        case "register":
+            if (registeredFrameURLs.length === 0) {
+                initializeSidebars();
+            }
+
+            registeredFrameURLs.push(msg.frameURL);
+            break;
+        default:
+            console.log("message received", msg);
+    }
+});
+
 var ifGlobals = function(globals, cb) {
     var command = globals.map(function(global) {
         return "typeof " + global + " !== 'undefined'";
@@ -11,63 +50,29 @@ var ifGlobals = function(globals, cb) {
     )
 };
 
-var sidebarCache = {};
-
-var initializeSidebar = function(name, globals, location, indexPage, errorPage) {
-    // if the sidebar was already created, set it to the correct page
-    // if it was not created, only create it if on a page with the `can` globals
-    ifGlobals(globals, function(globalsExist) {
-        var cached = sidebarCache[name]
-
-        if (cached) {
-            var page = globalsExist ? indexPage : errorPage;
-
-            // if the page that should be displayed changes, call setPage again
-            if (cached.page !== page) {
-                cached.page = page;
-                cached.sidebar.setPage(page);
-            }
-        } else {
-            if (globalsExist) {
-                chrome.devtools.panels[location].createSidebarPane(name, function(sidebar) {
-                    sidebar.setPage(indexPage);
-
-                    // store sidebar so the page can be updated if the sidebar should no longer be shown
-                    sidebarCache[name] = {
-                        sidebar: sidebar,
-                        page: indexPage
-                    };
-                });
-            }
-        }
-    });
-};
-
-(function createSidebarsIfGlobalsExist() {
+function initializeSidebars() {
     initializeSidebar(
         "CanJS ViewModel",
-        [ "can", "can.Symbol", "can.viewModel", "can.Reflect" ],
         "elements",
-        "viewmodel-editor/index.html",
-        "viewmodel-editor/error.html"
+        "viewmodel-editor/index.html"
     );
+//
+//    initializeSidebar(
+//        "CanJS Bindings Graph",
+//        "elements",
+//        "bindings-graph/index.html"
+//    );
+//
+//    initializeSidebar(
+//        "CanJS Queues Stack",
+//        "sources",
+//        // needs to have min-height of 50vh
+//        "queues-stack/index.html"
+//    );
+}
 
-    initializeSidebar(
-        "CanJS Bindings Graph",
-        [ "can", "can.Symbol", "can.Reflect", "can.viewModel", "can.debug", "can.debug.formatGraph", "can.debug.getGraph" ],
-        "elements",
-        "bindings-graph/index.html",
-        "bindings-graph/error.html"
-    );
-
-    initializeSidebar(
-        "CanJS Queues Stack",
-        [ "can", "can.queues", "can.Reflect" ],
-        "sources",
-        // needs to have min-height of 50vh
-        "queues-stack/index.html",
-        "queues-stack/error.html"
-    );
-
-    setTimeout(createSidebarsIfGlobalsExist, 2000);
-}());
+function initializeSidebar(name, location, page) {
+    chrome.devtools.panels[location].createSidebarPane(name, function(sidebar) {
+        sidebar.setPage(page);
+    });
+}
