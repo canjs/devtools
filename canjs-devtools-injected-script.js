@@ -1,56 +1,73 @@
 // expose devtools namespace on the window
 var __CANJS_DEVTOOLS__ = {
-    selectedElement: null,
-    can: null,
-
-    patchMethod: function(can, package, method, sendData) {
-        var devtools = this;
-
-        var orig = can[package][method];
-        can[package][method] = function() {
-            var ret = orig.apply(this, arguments);
-
-            // if an element is selected in devtools, send new ViewModel / Binding data
-            if (devtools.selectedElement) {
-                sendData();
-            }
-
-            return ret;
-        };
-    },
-
-    setSelectedElement: function(el) {
-        this.selectedElement = el;
-
-        if (el) {
-            var can = this.can = el.ownerDocument.defaultView.can;
-
-            if (can && !can.__CANJS_DEVTOOLS_PATCHED__) {
-                // patch CanJS methods to send data back to devtools
-                this.patchMethod(can, "Reflect", "setKeyValue", this.sendViewModelData.bind(this));
-                this.patchMethod(can, "Reflect", "getKeyValue", this.sendViewModelData.bind(this));
-                this.patchMethod(can, "Reflect", "setValue", this.sendViewModelData.bind(this));
-                this.patchMethod(can, "Reflect", "getValue", this.sendViewModelData.bind(this));
-                // mark as patched so it is not patched more than once
-                can.__CANJS_DEVTOOLS_PATCHED__ = true;
-            }
+	getViewModelData: function(el) {
+        // if $0 is not in this frame, el will be null
+        if (!el) {
+            return;
         }
-    },
 
-    sendViewModelData: function() {
-    },
+        var can = el.ownerDocument.defaultView.can;
 
-    sendMessage: function(detail) {
+        // the page that $0 is in may not have can
+        if (!can) {
+            return;
+        }
+
+		var elementWithViewModel = (function getElementWithViewModel(el) {
+			var vm = el[can.Symbol.for("can.viewModel")];
+			return vm ?
+				el :
+				el.parentNode ?
+				getElementWithViewModel(el.parentNode) :
+				undefined;
+		}(el));
+
+		var getViewModelData = function(el) {
+			var viewModel = can.viewModel(el);
+			var viewModelData = viewModel.serialize();
+			var viewModelKeys = can.Reflect.getOwnKeys( viewModel );
+
+			for (var i=0; i<viewModelKeys.length; i++) {
+				var key = viewModelKeys[i];
+				if (!viewModelData[ key ]) {
+					viewModelData[key] = can.Reflect.getKeyValue( viewModel, key );
+				}
+			}
+
+			var sortedViewModel = {};
+
+			Object.keys(viewModelData).sort().forEach(function(key) {
+				sortedViewModel[key] = viewModelData[key];
+			});
+
+			return sortedViewModel;
+		};
+
+		if (elementWithViewModel) {
+			return {
+                type: "viewModel",
+				tagName: elementWithViewModel.tagName,
+				viewModel: getViewModelData( elementWithViewModel )
+			};
+		} else {
+			return {
+                type: "viewModel",
+				tagName: el.tagName
+			};
+		}
+	},
+
+    register: function(detail) {
         var msg = new CustomEvent("__CANJS_DEVTOOLS_MSG__", {	
-            detail: detail
+            detail: {
+                type: "register",
+                frameURL: window.location.href
+            }
         });	
 
         document.dispatchEvent(msg);
     }
 };
 
-__CANJS_DEVTOOLS__.sendMessage({
-    type: "register",
-    frameURL: window.location.href
-});
-
+// register page's URL so that inspectedWindow.eval can call devtools functions in this frame
+__CANJS_DEVTOOLS__.register();
