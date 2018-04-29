@@ -3,10 +3,9 @@
 var registeredFrameURLs = [];
 
 // listen to messages from the injected-script
-// TODO - move this to index.js and pass registeredFrameURLs list to each sidebar
 chrome.runtime.onMessage.addListener(function(msg, sender) {
-    if (msg.type === "register") {
-        registeredFrameURLs.push(msg.frameURL);
+    if (msg.type === "update-frames") {
+        registeredFrameURLs = msg.frameURLs;
     }
 });
 
@@ -26,14 +25,25 @@ can.Component.extend({
 
         viewModelData: "observable",
 
-        setKeyValue: function() {
+        setKeyValue: function(key, value) {
+            for (var i=0; i<registeredFrameURLs.length; i++) {
+                chrome.devtools.inspectedWindow.eval(
+                    "__CANJS_DEVTOOLS__.setViewModelKeyValue($0, '" + key + "', '" + value + "')",
+                    { frameURL: registeredFrameURLs[i] },
+                    function(result, isException) {
+                        if (isException) {
+                            console.error(isException);
+                        }
+                    }
+                );
+            }
         },
 
         connectedCallback() {
             var vm = this;
             var timeoutId;
 
-            var getSelectedElementData = function() {
+            (function getSelectedElementData() {
                 for (var i=0; i<registeredFrameURLs.length; i++) {
                     chrome.devtools.inspectedWindow.eval(
                         "__CANJS_DEVTOOLS__.getViewModelData($0)",
@@ -49,8 +59,8 @@ can.Component.extend({
 
                             // if selected element changed, remove viewModel completely
                             if (vm.tagName !== result.tagName) {
-                                can.Reflect.setKeyValue(vm, "tagName", result.tagName);
-                                can.Reflect.setKeyValue(vm, "viewModelData", result.viewModel);
+                                vm.tagName = result.tagName;
+                                vm.viewModelData = result.viewModel;
                             } else {
                                 if (vm.viewModelData) {
                                     if (result.viewModel) {
@@ -67,9 +77,7 @@ can.Component.extend({
                 }
 
                 timeoutId = setTimeout(getSelectedElementData, 100);
-            };
-
-            getSelectedElementData();
+            }());
 
             return function disconnect() {
                 clearTimeout(timeoutId);
