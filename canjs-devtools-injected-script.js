@@ -115,6 +115,53 @@ var __CANJS_DEVTOOLS__ = {
                 reason: task.meta && task.meta.reasonLog && task.meta.reasonLog.join(" ")
             };
         });
+    },
+
+    getViewModelKeys: function(el, can) {
+        return Object.keys( this.getSerializedViewModel(el, can) );
+    },
+
+    getElementKeys: function(el) {
+        var keysSet = new Set([]);
+        var keysMap = el.attributes;
+
+        for (var i=0; i<keysMap.length; i++) {
+            var key = keysMap[i].name.split(/:to|:from|:bind/)[0];
+            key = key.split(":")[key.split(":").length - 1]
+            keysSet.add( key );
+        }
+
+
+        return Array.from(keysSet);
+    },
+
+    getBindingsGraphData: function(el, key) {
+        // if $0 is not in this frame, el will be null
+        if (!el) {
+            return;
+        }
+
+        var can = el.ownerDocument.defaultView.can;
+
+        // the page that $0 is in may not have can
+        if (!can) {
+            return;
+        }
+
+        var hasViewModel = el[can.Symbol.for("can.viewModel")];
+        var obj = hasViewModel ? can.viewModel(el) : el;
+
+        var graphData;
+
+        if (can.debug && can.debug.getGraph && can.debug.formatGraph) {
+            graphData = can.debug.formatGraph( can.debug.getGraph( obj, key ) );
+        }
+
+        return {
+            availableKeys: hasViewModel ? this.getViewModelKeys(el, can) : this.getElementKeys(el),
+            selectedObj: "<" + el.tagName.toLowerCase() + ">" + (hasViewModel ? ".viewModel" : ""),
+            graphData: graphData
+        };
     }
 };
 

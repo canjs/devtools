@@ -11,11 +11,11 @@ initializeSidebar(
     "viewmodel-editor/index.html"
 );
 
-//initializeSidebar(
-//    "CanJS Bindings Graph",
-//    "elements",
-//    "bindings-graph/index.html"
-//);
+initializeSidebar(
+    "CanJS Bindings Graph",
+    "elements",
+    "bindings-graph/index.html"
+);
 
 initializeSidebar(
     "CanJS Queues Stack",

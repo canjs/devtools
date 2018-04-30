@@ -1,101 +1,14 @@
-// run an expression in the page
-var pageEval = chrome.devtools.inspectedWindow.eval;
+// URLs of all frames that have registered that they
+// have a global `can` present
+var registeredFrameURLs = [];
 
-// tostring a function and wrap in an IIFE so it can be evaled
-var iifeify = function(fn) {
-    return "(" + fn.toString() + "())";
-};
-
-// helpers for working with the selected element (`$0`)
-var selectedElement = {
-    getTagName() {
-        return new Promise(function(resolve, reject) {
-            pageEval("$0.tagName", function(result, isException) {
-                if (isException) {
-                    reject(isException);
-                }
-                resolve(result.toLowerCase());
-            });
-        });
-    },
-
-    hasViewModel() {
-        return new Promise(function(resolve, reject) {
-            pageEval("$0[can.Symbol.for('can.viewModel')]", function(hasViewModel, isException) {
-                if (isException) {
-                    reject(isException);
-                }
-                resolve(!!hasViewModel);
-            });
-        });
-    },
-
-    getViewModelKeys() {
-        return new Promise(function(resolve, reject) {
-            pageEval("can.Reflect.getOwnKeys( can.viewModel( $0 ) )", function(keys, isException) {
-                if (isException) {
-                    reject(isException);
-                }
-
-                resolve(keys);
-            });
-        });
-    },
-
-    getElementKeysHelper: function() {
-        var keysSet = new Set([]);
-        var keysMap = $0.attributes;
-
-        for (var i=0; i<keysMap.length; i++) {
-            var key = keysMap[i].name.split(/:to|:from|:bind/)[0];
-            key = key.split(":")[key.split(":").length - 1]
-            keysSet.add( key );
-        }
-
-
-        return Array.from(keysSet);
-    },
-
-    getElementKeys() {
-        return new Promise(function(resolve, reject) {
-            pageEval( iifeify( selectedElement.getElementKeysHelper ), function(keys, isException) {
-                if (isException) {
-                    reject(isException);
-                }
-
-                resolve(keys);
-            });
-        });
-    },
-
-    getAvailableKeys(useViewModel) {
-        if (useViewModel) {
-            return selectedElement.getViewModelKeys();
-        } else {
-            return selectedElement.getElementKeys();
-        }
-    },
-
-    getGraph(useViewModel, property) {
-        var command =
-            "can.debug.formatGraph( " +
-                "can.debug.getGraph( " +
-                    ( useViewModel ? "can.viewModel( $0 )" : "$0" ) +
-                    (property ? ", '" + property + "'" : "") +
-                " )" +
-            " )";
-
-
-        return new Promise(function(resolve, reject) {
-            pageEval(command, function(result, isException) {
-                if (isException) {
-                    reject(isException);
-                }
-                resolve(result);
-            });
-        });
+// listen to messages from the injected-script
+chrome.runtime.onMessage.addListener(function(msg, sender) {
+    if (msg.type === "update-frames") {
+        registeredFrameURLs = msg.frameURLs;
     }
-};
+});
+
 
 can.Component.extend({
     tag: "canjs-devtools-bindings-graph",
@@ -110,23 +23,23 @@ can.Component.extend({
             var vm = this;
 
             var loadGraphData = function() {
-                selectedElement.hasViewModel()
-                    .then(function(hasViewModel) {
-                        selectedElement.getTagName()
-                            .then(function(tagName) {
-                                vm.selectedObj = "<" + tagName.toLowerCase() + ">" + (hasViewModel ? ".viewModel" : "");
-                            });
-
-                        selectedElement.getAvailableKeys(hasViewModel)
-                            .then(function(keys) {
-                                vm.availableKeys.replace(keys);
-                            });
-
-                        selectedElement.getGraph(hasViewModel, vm.selectedKey)
-                            .then(function(data) {
-                                vm.graphData = data;
-                            });
-                    });
+                for (var i=0; i<registeredFrameURLs.length; i++) {
+                    chrome.devtools.inspectedWindow.eval(
+                        "__CANJS_DEVTOOLS__.getBindingsGraphData($0, '" + vm.selectedKey + "')",
+                        { frameURL: registeredFrameURLs[i] },
+                        function(result, isException) {
+                            if (result) {
+                                vm.selectedObj = result.selectedObj;
+                                vm.availableKeys.replace(result.availableKeys);
+                                if (result.graphData) {
+                                    vm.graphData = result.graphData;
+                                } else {
+                                    can.Reflect.deleteKeyValue(vm, "graphData");
+                                }
+                            }
+                        }
+                    )
+                }
             };
 
             // load initial data
@@ -138,7 +51,10 @@ can.Component.extend({
             // update graph data when user selects a new property
             this.listenTo("selectedKey", loadGraphData);
 
-            return this.stopListening.bind( this );
+            return function() {
+                this.stopListening();
+                chrome.devtools.panels.elements.onSelectionChanged.removeListener(loadGraphData);
+            };
         }
     },
 
