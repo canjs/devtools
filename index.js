@@ -17,9 +17,8 @@ initializeSidebar(
 //    "bindings-graph/index.html"
 //);
 
-//initializeSidebar(
-//    "CanJS Queues Stack",
-//    "sources",
-//    // needs to have min-height of 50vh
-//    "queues-stack/index.html"
-//);
+initializeSidebar(
+    "CanJS Queues Stack",
+    "sources",
+    "queues-stack/index.html"
+);

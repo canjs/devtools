@@ -82,6 +82,39 @@ var __CANJS_DEVTOOLS__ = {
         if (elementWithViewModel) {
             can.Reflect.setKeyValue( can.viewModel( elementWithViewModel ), key, value);
         }
+    },
+
+    inspectTask(index) {
+        var can = window.can;
+
+        if (!can) {
+            return;
+        }
+
+        var stack = can.queues.stack();
+
+        if (stack && stack[index] && stack[index].fn) {
+            inspect( stack[index].fn );
+        }
+    },
+
+    queuesStack: function() {
+        var can = window.can;
+
+        if (!can) {
+            return;
+        }
+
+        var stack = can.queues.stack();
+
+        return stack.map(function(task) {
+            return {
+                queue: task.meta.stack.name,
+                context: can.Reflect.getName(task.context),
+                fn: can.Reflect.getName(task.fn),
+                reason: task.meta && task.meta.reasonLog && task.meta.reasonLog.join(" ")
+            };
+        });
     }
 };
 

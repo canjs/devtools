@@ -1,46 +1,13 @@
-// run an expression in the page
-var pageEval = chrome.devtools.inspectedWindow.eval;
+// URLs of all frames that have registered that they
+// have a global `can` present
+var registeredFrameURLs = [];
 
-// tostring a function and wrap in an IIFE so it can be evaled
-var iifeify = function(fn) {
-    return "(" + fn.toString() + "())";
-};
-
-var POLLING_INTERVAL = 100;
-
-// helpers for accessing main page's `can`
-var canHelpers = {
-    queuesFilterStack: function() {
-        return can.queues.stack().map(function(task) {
-            return {
-                queue: task.meta.stack.name,
-                context: can.Reflect.getName(task.context),
-                fn: can.Reflect.getName(task.fn),
-                reason: task.meta && task.meta.reasonLog && task.meta.reasonLog.join(" ")
-            };
-        });
-    },
-
-    queuesStack() {
-        return new Promise(function(resolve, reject) {
-            pageEval(iifeify( canHelpers.queuesFilterStack ), function(result, isException) {
-                if (isException) {
-                    reject(isException);
-                }
-
-                resolve(result);
-            });
-        });
-    },
-
-    inspectTask(index) {
-        pageEval("inspect( can.queues.stack()[" + index + "].fn )", function(result, isException) {
-            if (isException) {
-                console.error(isException);
-            }
-        });
+// listen to messages from the injected-script
+chrome.runtime.onMessage.addListener(function(msg, sender) {
+    if (msg.type === "update-frames") {
+        registeredFrameURLs = msg.frameURLs;
     }
-};
+});
 
 can.Component.extend({
     tag: "canjs-devtools-queues-stack",
@@ -56,7 +23,17 @@ can.Component.extend({
 	    stack: can.DefineList,
 
         inspectTask(taskIndex) {
-            canHelpers.inspectTask(taskIndex);
+            for (var i=0; i<registeredFrameURLs.length; i++) {
+                chrome.devtools.inspectedWindow.eval(
+                    "__CANJS_DEVTOOLS__.inspectTask(" + taskIndex + ")",
+                    { frameURL: registeredFrameURLs[i] },
+                    function(stack, isException) {
+                        if (isException) {
+                            console.error(isException);
+                        }
+                    }
+                );
+            }
         },
 
         connectedCallback() {
@@ -64,14 +41,21 @@ can.Component.extend({
             var vm = this;
 
             var updateStack = function() {
-                canHelpers.queuesStack()
-                    .then(function(stack) {
-                        if (!vm.stack || vm.stack.length !== stack.length) {
-                            vm.stack = stack;
+                for (var i=0; i<registeredFrameURLs.length; i++) {
+                    chrome.devtools.inspectedWindow.eval(
+                        "__CANJS_DEVTOOLS__.queuesStack()",
+                        { frameURL: registeredFrameURLs[i] },
+                        function(stack, isException) {
+                            if (stack) {
+                                if (!vm.stack || vm.stack.length !== stack.length) {
+                                    vm.stack = stack;
+                                }
+                            }
                         }
-                    });
+                    );
+                }
 
-                timeoutId = setTimeout(updateStack, POLLING_INTERVAL);
+                timeoutId = setTimeout(updateStack, 100);
             };
 
             updateStack();
