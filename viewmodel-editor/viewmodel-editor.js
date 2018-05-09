@@ -13,17 +13,23 @@ can.Component.extend({
     tag: "canjs-devtools-viewmodel-editor",
 
     view: `
-        <viewmodel-editor
-			tagName:from="tagName"
-			viewModelData:from="viewModelData"
-			setKeyValue:from="setKeyValue"
-        ></viewmodel-editor>
+        {{#if error}}
+            <h2>{{error}}</h2>
+        {{else}}
+            <viewmodel-editor
+                tagName:from="tagName"
+                viewModelData:from="viewModelData"
+                setKeyValue:from="setKeyValue"
+            ></viewmodel-editor>
+        {{/if}}
     `,
 
     ViewModel: {
         tagName: "string",
 
         viewModelData: "observable",
+
+        error: "string",
 
         setKeyValue: function(key, value) {
             for (var i=0; i<registeredFrameURLs.length; i++) {
@@ -32,7 +38,7 @@ can.Component.extend({
                     { frameURL: registeredFrameURLs[i] },
                     function(result, isException) {
                         if (isException) {
-                            console.error(isException);
+                            return;
                         }
                     }
                 );
@@ -50,28 +56,38 @@ can.Component.extend({
                         { frameURL: registeredFrameURLs[i] },
                         function(result, isException) {
                             if (isException) {
-                                console.error(isException);
-                            }
-
-                            if (!result) {
                                 return;
                             }
 
-                            // if selected element changed, remove viewModel completely
-                            if (vm.tagName !== result.tagName) {
-                                vm.tagName = result.tagName;
-                                vm.viewModelData = result.viewModel;
-                            } else {
-                                if (vm.viewModelData) {
-                                    if (result.viewModel) {
-                                        can.Reflect.update(vm.viewModelData, result.viewModel);
+                            var status = result.status;
+                            var detail = result.detail;
+
+                            switch(status) {
+                                case "ignore":
+                                    break;
+                                case "error":
+                                    vm.error = detail;
+                                    break;
+                                case "success":
+                                    // if selected element changed, remove viewModel completely
+                                    if (vm.tagName !== detail.tagName) {
+                                        vm.error = null;
+                                        vm.tagName = detail.tagName;
+                                        vm.viewModelData = detail.viewModel;
                                     } else {
-                                        can.Reflect.deleteKeyValue(vm, "viewModelData");
+                                        if (vm.viewModelData) {
+                                            if (detail.viewModel) {
+                                                can.Reflect.update(vm.viewModelData, detail.viewModel);
+                                            } else {
+                                                can.Reflect.deleteKeyValue(vm, "viewModelData");
+                                            }
+                                        } else {
+                                            can.Reflect.setKeyValue(vm, "viewModelData", detail.viewModel);
+                                        }
                                     }
-                                } else {
-                                    can.Reflect.setKeyValue(vm, "viewModelData", result.viewModel);
-                                }
+                                    break;
                             }
+
                         }
                     );
                 }
