@@ -13,7 +13,7 @@ var __CANJS_DEVTOOLS__ = {
 
         // the page that $0 is in may not have can
         if (!can) {
-            return this.makeErrorResponse("`window.can` is not defined");
+            return this.makeErrorResponse(this.NO_CAN_MSG);
         }
 
         var elementWithViewModel = this.getNearestElementWithViewModel(el, can);
@@ -39,7 +39,7 @@ var __CANJS_DEVTOOLS__ = {
 
         // the page that $0 is in may not have can
         if (!can) {
-            return this.makeErrorResponse("`window.can` is not defined");
+            return this.makeErrorResponse(this.NO_CAN_MSG);
         }
 
         var elementWithViewModel = this.getNearestElementWithViewModel(el, can);
@@ -52,30 +52,31 @@ var __CANJS_DEVTOOLS__ = {
     getBindingsGraphData: function(el, key) {
         // if $0 is not in this frame, el will be null
         if (!el) {
-            return;
+            return this.makeIgnoreResponse("$0 is not in this frame");
         }
 
         var can = el.ownerDocument.defaultView.can;
 
         // the page that $0 is in may not have can
         if (!can) {
-            return;
+            return this.makeErrorResponse(this.NO_CAN_MSG);
+        }
+
+        if (!can.debug || !can.debug.getGraph || !can.debug.formatGraph) {
+            return this.makeErrorResponse("Graph methods are not available. Make sure to import `can-debug`.");
         }
 
         var hasViewModel = el[can.Symbol.for("can.viewModel")];
         var obj = hasViewModel ? can.viewModel(el) : el;
 
-        var graphData;
+        var graphData = can.debug.formatGraph( can.debug.getGraph( obj, key ) );
 
-        if (can.debug && can.debug.getGraph && can.debug.formatGraph) {
-            graphData = can.debug.formatGraph( can.debug.getGraph( obj, key ) );
-        }
 
-        return {
+        return this.makeSuccessResponse({
             availableKeys: hasViewModel ? this.getViewModelKeys(el, can) : this.getElementKeys(el),
             selectedObj: "<" + el.tagName.toLowerCase() + ">" + (hasViewModel ? ".viewModel" : ""),
             graphData: graphData
-        };
+        });
     },
 
     queuesStack: function() {
@@ -83,26 +84,28 @@ var __CANJS_DEVTOOLS__ = {
 
         if (!can) {
             // don't show an error for this
-            return;
+            return this.makeIgnoreResponse(this.NO_CAN_MSG);
         }
 
         var stack = can.queues.stack();
 
-        return stack.map(function(task) {
-            return {
-                queue: task.meta.stack.name,
-                context: can.Reflect.getName(task.context),
-                fn: can.Reflect.getName(task.fn),
-                reason: task.meta && task.meta.reasonLog && task.meta.reasonLog.join(" ")
-            };
-        });
+        return this.makeSuccessResponse(
+            stack.map(function(task) {
+                return {
+                    queue: task.meta.stack.name,
+                    context: can.Reflect.getName(task.context),
+                    fn: can.Reflect.getName(task.fn),
+                    reason: task.meta && task.meta.reasonLog && task.meta.reasonLog.join(" ")
+                };
+            })
+        );
     },
 
     inspectTask(index) {
         var can = window.can;
 
         if (!can) {
-            return this.makeErrorResponse("`window.can` is not defined");
+            return this.makeErrorResponse(this.NO_CAN_MSG);
         }
 
         var stack = can.queues.stack();
@@ -133,6 +136,8 @@ var __CANJS_DEVTOOLS__ = {
     makeSuccessResponse: function(detail) {
         return this.makeResponse("success", detail);
     },
+
+    NO_CAN_MSG: "`window.can` is not defined. Make sure to import `can-debug` or set `window.can`.",
 
     /*
      * helper methods
