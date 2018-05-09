@@ -83,14 +83,18 @@ var __CANJS_DEVTOOLS__ = {
         var can = window.can;
 
         if (!can) {
-            // don't show an error for this
+            // don't show an error for this because unlike ViewModel and Graph functions,
+            // this can't check if it is the correct frame by using $0.
+            // So just assume it's not the correct frame if `window.can` is undefined.
             return this.makeIgnoreResponse(this.NO_CAN_MSG);
         }
 
         var stack = can.queues.stack();
 
-        return this.makeSuccessResponse(
-            stack.map(function(task) {
+        return this.makeSuccessResponse({
+            frameURL: window.location.href,
+
+            stack: stack.map(function(task) {
                 return {
                     queue: task.meta.stack.name,
                     context: can.Reflect.getName(task.context),
@@ -98,7 +102,7 @@ var __CANJS_DEVTOOLS__ = {
                     reason: task.meta && task.meta.reasonLog && task.meta.reasonLog.join(" ")
                 };
             })
-        );
+        });
     },
 
     inspectTask(index) {
