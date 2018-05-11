@@ -157,7 +157,9 @@ var __CANJS_DEVTOOLS__ = {
 
     getSerializedViewModel: function(el, can) {
         var viewModel = can.viewModel(el);
-        var viewModelData = viewModel.serialize();
+        var viewModelData = typeof viewModel.serialize === "function" ?
+            viewModel.serialize() :
+            JSON.parse( JSON.stringify(viewModel) );
 
         // if viewModel Type supports getOwnKeys, add any non-enumerable properties
         if (viewModel[ can.Symbol.for( "can.getOwnKeys" ) ]) {
