@@ -1,14 +1,3 @@
-// URLs of all frames that have registered that they
-// have a global `can` present
-var registeredFrameURLs = [];
-
-// listen to messages from the injected-script
-chrome.runtime.onMessage.addListener(function(msg, sender) {
-    if (msg.type === "update-frames") {
-        registeredFrameURLs = msg.frameURLs;
-    }
-});
-
 can.Component.extend({
     tag: "canjs-devtools-bindings-graph",
 
@@ -40,38 +29,31 @@ can.Component.extend({
             var vm = this;
 
             var loadGraphData = function() {
-                for (var i=0; i<registeredFrameURLs.length; i++) {
-                    chrome.devtools.inspectedWindow.eval(
-                        "__CANJS_DEVTOOLS__.getBindingsGraphData($0, '" + vm.selectedKey + "')",
-                        { frameURL: registeredFrameURLs[i] },
-                        function(result, isException) {
-                            if (isException) {
-                                return;
-                            }
+                window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction(
+                    "getBindingsGraphData($0, '" + vm.selectedKey + "')",
+                    function(result) {
+                        var status = result.status;
+                        var detail = result.detail;
 
-                            var status = result.status;
-                            var detail = result.detail;
-
-                            switch(status) {
-                                case "ignore":
-                                    break;
-                                case "error":
-                                    vm.error = detail;
-                                    break;
-                                case "success":
-                                    vm.error = null;
-                                    vm.selectedObj = detail.selectedObj;
-                                    vm.availableKeys.replace(detail.availableKeys);
-                                    if (detail.graphData) {
-                                        vm.graphData = detail.graphData;
-                                    } else {
-                                        can.Reflect.deleteKeyValue(vm, "graphData");
-                                    }
-                                    break;
-                            }
+                        switch(status) {
+                            case "ignore":
+                                break;
+                            case "error":
+                                vm.error = detail;
+                                break;
+                            case "success":
+                                vm.error = null;
+                                vm.selectedObj = detail.selectedObj;
+                                vm.availableKeys.replace(detail.availableKeys);
+                                if (detail.graphData) {
+                                    vm.graphData = detail.graphData;
+                                } else {
+                                    can.Reflect.deleteKeyValue(vm, "graphData");
+                                }
+                                break;
                         }
-                    )
-                }
+                    }
+                );
             };
 
             // there is a slight delay between when the devtools panel is opened
