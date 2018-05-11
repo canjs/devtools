@@ -2,7 +2,7 @@ var frameURLs = new Set([]);
 
 function sendFrameURLs() {
     chrome.runtime.sendMessage({
-        type: "update-frames",
+        type: "__CANJS_DEVTOOLS_REGISTER_FRAME__",
         frameURLs: Array.from(frameURLs)
     });
 
