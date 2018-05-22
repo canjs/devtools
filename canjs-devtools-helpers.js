@@ -26,7 +26,7 @@ window.CANJS_DEVTOOLS_HELPERS = {
 
 // listen to messages from the injected-script
 chrome.runtime.onMessage.addListener(function(msg, sender) {
-    if (msg.type === "__CANJS_DEVTOOLS_REGISTER_FRAME__") {
+    if (msg.type === "__CANJS_DEVTOOLS_UPDATE_FRAMES__") {
         CANJS_DEVTOOLS_HELPERS.registeredFrameURLs = msg.frameURLs;
     }
 });

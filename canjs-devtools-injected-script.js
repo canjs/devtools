@@ -203,4 +203,9 @@ var __CANJS_DEVTOOLS__ = {
 };
 
 // register page so inspectedWindow.eval can call devtools functions in this frame
-document.dispatchEvent( new CustomEvent("__CANJS_DEVTOOLS_REGISTER__") );
+var keepaliveEvent = new CustomEvent("__CANJS_DEVTOOLS_KEEPALIVE__");
+
+(function keepalive() {
+    document.dispatchEvent( keepaliveEvent );
+    setTimeout(keepalive, 500);
+}());

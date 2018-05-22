@@ -1,21 +1,23 @@
 var frameURLs = new Set([]);
 
-function sendFrameURLs() {
+(function updateFrameURLs() {
+    // send updated list of frames to canjs-devtools-helpers.js
     chrome.runtime.sendMessage({
-        type: "__CANJS_DEVTOOLS_REGISTER_FRAME__",
+        type: "__CANJS_DEVTOOLS_UPDATE_FRAMES__",
         frameURLs: Array.from(frameURLs)
     });
 
-    setTimeout(sendFrameURLs, 2000);
-}
+    // clear frames to remove any inactive URLs
+    frameURLs.clear();
+
+    setTimeout(updateFrameURLs, 2000);
+}());
 
 chrome.runtime.onConnect.addListener(function(port) {
     if (port.name === "canjs-devtools") {
-        // listen to messages from the canjs-devtools.js
+        // listen for messages from canjs-devtools-content-script.js
         port.onMessage.addListener(function(msg, port) {
             frameURLs.add( port.sender.url );
         });
     }
-
-    sendFrameURLs();
 });
