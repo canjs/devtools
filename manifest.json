@@ -1,7 +1,7 @@
 {
     "name": "CanJS DevTools",
     "description": "DevTools Extension for CanJS",
-    "version": "0.0.7",
+    "version": "0.0.8",
     "icons": {
         "16": "images/canjs-16.png",
         "48": "images/canjs-48.png",
