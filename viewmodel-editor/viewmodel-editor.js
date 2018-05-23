@@ -52,7 +52,7 @@ can.Component.extend({
                                 } else {
                                     if (vm.viewModelData) {
                                         if (detail.viewModel) {
-                                            can.Reflect.update(vm.viewModelData, detail.viewModel);
+                                            can.Reflect.updateDeep(vm.viewModelData, detail.viewModel);
                                         } else {
                                             can.Reflect.deleteKeyValue(vm, "viewModelData");
                                         }
