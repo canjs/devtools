@@ -17,7 +17,7 @@ chrome.runtime.onConnect.addListener(function(port) {
     if (port.name === "canjs-devtools") {
         // listen for messages from canjs-devtools-content-script.js
         port.onMessage.addListener(function(msg, port) {
-            frameURLs.add( port.sender.url );
+            frameURLs.add( port.sender.url.split("#")[0] );
         });
     }
 });
