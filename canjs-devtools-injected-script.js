@@ -45,7 +45,7 @@ var __CANJS_DEVTOOLS__ = {
         var elementWithViewModel = this.getNearestElementWithViewModel(el, can);
 
         if (elementWithViewModel) {
-            can.Reflect.setKeyValue( can.viewModel( elementWithViewModel ), key, value);
+            can.Reflect.setKeyValue( elementWithViewModel[can.Symbol.for("can.viewModel")], key, value);
         }
     },
 
@@ -67,7 +67,7 @@ var __CANJS_DEVTOOLS__ = {
         }
 
         var hasViewModel = el[can.Symbol.for("can.viewModel")];
-        var obj = hasViewModel ? can.viewModel(el) : el;
+        var obj = hasViewModel ? hasViewModel : el;
 
         var graphData = can.debug.formatGraph( can.debug.getGraph( obj, key ) );
 
@@ -156,7 +156,7 @@ var __CANJS_DEVTOOLS__ = {
     },
 
     getSerializedViewModel: function(el, can) {
-        var viewModel = can.viewModel(el);
+        var viewModel = el[can.Symbol.for("can.viewModel")];
         var viewModelData = typeof viewModel.serialize === "function" ?
             viewModel.serialize() :
             JSON.parse( JSON.stringify(viewModel) );
