@@ -1,15 +1,17 @@
 window.CANJS_DEVTOOLS_HELPERS = {
     // URLs of all frames that have registered that they
     // have a global `can` present
-    registeredFrameURLs: [],
+    registeredFrames: {},
 
     runDevtoolsFunction: function(fnString, cb) {
-        var registeredFrameURLs = this.registeredFrameURLs;
+        var registeredFrames = this.registeredFrames;
 
-        for (var i=0; i<registeredFrameURLs.length; i++) {
+        var frameURLs = Object.keys(this.registeredFrames);
+
+        for (var i=0; i<frameURLs.length; i++) {
             chrome.devtools.inspectedWindow.eval(
                 "typeof __CANJS_DEVTOOLS__ === 'object' && __CANJS_DEVTOOLS__." + fnString,
-                { frameURL: registeredFrameURLs[i] },
+                { frameURL: frameURLs[i] },
                 function(result, isException) {
                     if (isException) {
                         return;
@@ -27,6 +29,6 @@ window.CANJS_DEVTOOLS_HELPERS = {
 // listen to messages from the injected-script
 chrome.runtime.onMessage.addListener(function(msg, sender) {
     if (msg.type === "__CANJS_DEVTOOLS_UPDATE_FRAMES__") {
-        CANJS_DEVTOOLS_HELPERS.registeredFrameURLs = msg.frameURLs;
+        CANJS_DEVTOOLS_HELPERS.registeredFrames = msg.frames;
     }
 });

@@ -3,9 +3,9 @@
     "description": "DevTools Extension for CanJS",
     "version": "0.0.9",
     "icons": {
-        "16": "images/canjs-16.png",
-        "48": "images/canjs-48.png",
-        "128": "images/canjs-128.png"
+        "16": "images/canjs-16-enabled.png",
+        "48": "images/canjs-48-enabled.png",
+        "128": "images/canjs-128-enabled.png"
     },
     "manifest_version": 2,
     "devtools_page": "index.html",
@@ -21,5 +21,12 @@
         "canjs-devtools-injected-script.js"
     ],
     "permissions": [],
-    "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'"
+    "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
+    "browser_action": {
+        "default_title": "CanJS Devtools",
+        "default_popup": "popups/no-can.html",
+        "default_icon": {
+            "16": "images/canjs-16-disabled.png"
+        }
+    }
 }
