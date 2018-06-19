@@ -3,7 +3,7 @@ can.Component.extend({
 
     view: `
         {{#if error}}
-            <h2>{{error}}</h2>
+            <h2>{{{error}}}</h2>
         {{else}}
             <queues-logstack
                 stack:from="stack"

@@ -1,15 +1,29 @@
 // expose devtools namespace on the window
 var __CANJS_DEVTOOLS__ = {
     /*
+     * CanJS global set by calling `register`
+     */
+    can: null,
+
+    /*
      * methods called by devtools panels
      */
+    register: function(can) {
+        this.can = can;
+
+        // register page so inspectedWindow.eval can call devtools functions in this frame
+        var registrationEvent = new CustomEvent("__CANJS_DEVTOOLS_REGISTER__");
+
+        document.dispatchEvent( registrationEvent );
+    },
+
 	getViewModelData: function(el) {
         // if $0 is not in this frame, el will be null
         if (!el) {
             return this.makeIgnoreResponse("$0 is not in this frame");
         }
 
-        var can = el.ownerDocument.defaultView.can;
+        var can = this.can;
 
         // the page that $0 is in may not have can
         if (!can) {
@@ -25,7 +39,7 @@ var __CANJS_DEVTOOLS__ = {
 				viewModel: this.getSerializedViewModel( elementWithViewModel, can )
 			});
 		} else {
-            return this.makeErrorResponse("<" + el.tagName.toLowerCase() + "> does not have a viewModel");
+            return this.makeIgnoreResponse("&lt;" + el.tagName.toLowerCase() + "&gt; does not have a viewModel");
 		}
     },
 
@@ -35,7 +49,7 @@ var __CANJS_DEVTOOLS__ = {
             return this.makeIgnoreResponse("$0 is not in this frame");
         }
 
-        var can = el.ownerDocument.defaultView.can;
+        var can = this.can;
 
         // the page that $0 is in may not have can
         if (!can) {
@@ -55,7 +69,7 @@ var __CANJS_DEVTOOLS__ = {
             return this.makeIgnoreResponse("$0 is not in this frame");
         }
 
-        var can = el.ownerDocument.defaultView.can;
+        var can = this.can;
 
         // the page that $0 is in may not have can
         if (!can) {
@@ -80,7 +94,7 @@ var __CANJS_DEVTOOLS__ = {
     },
 
     queuesStack: function() {
-        var can = window.can;
+        var can = this.can;
 
         if (!can) {
             // don't show an error for this because unlike ViewModel and Graph functions,
@@ -106,7 +120,7 @@ var __CANJS_DEVTOOLS__ = {
     },
 
     inspectTask(index) {
-        var can = window.can;
+        var can = this.can;
 
         if (!can) {
             return this.makeErrorResponse(this.NO_CAN_MSG);
@@ -141,7 +155,7 @@ var __CANJS_DEVTOOLS__ = {
         return this.makeResponse("success", detail);
     },
 
-    NO_CAN_MSG: "`window.can` is not defined. Make sure to import `can-debug` or set `window.can`.",
+    NO_CAN_MSG: 'CanJS was not found on this page. If it is using CanJS, see the <a target="_blank" href="https://canjs.com/doc/guides/debugging.html">installation instructions</a>.',
 
     /*
      * helper methods
@@ -201,11 +215,3 @@ var __CANJS_DEVTOOLS__ = {
         return Array.from(keysSet);
     }
 };
-
-// register page so inspectedWindow.eval can call devtools functions in this frame
-var keepaliveEvent = new CustomEvent("__CANJS_DEVTOOLS_KEEPALIVE__");
-
-(function keepalive() {
-    document.dispatchEvent( keepaliveEvent );
-    setTimeout(keepalive, 500);
-}());
