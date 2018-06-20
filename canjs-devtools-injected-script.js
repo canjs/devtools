@@ -1,15 +1,16 @@
 // expose devtools namespace on the window
 var __CANJS_DEVTOOLS__ = {
     /*
-     * CanJS global set by calling `register`
+     * object containing CanJS modules that are used by methods below
+     * this is set by can-debug calling `register`
      */
-    can: null,
+    canNamespace: null,
 
     /*
      * methods called by devtools panels
      */
-    register: function(can) {
-        this.can = can;
+    register: function(canNamespace) {
+        this.canNamespace = canNamespace;
 
         // register page so inspectedWindow.eval can call devtools functions in this frame
         var registrationEvent = new CustomEvent("__CANJS_DEVTOOLS_REGISTER__");
@@ -23,9 +24,9 @@ var __CANJS_DEVTOOLS__ = {
             return this.makeIgnoreResponse("$0 is not in this frame");
         }
 
-        var can = this.can;
+        var can = this.canNamespace;
 
-        // the page that $0 is in may not have can
+        // handle the user having devtools open and navigating to a page without can
         if (!can) {
             return this.makeErrorResponse(this.NO_CAN_MSG);
         }
@@ -43,15 +44,15 @@ var __CANJS_DEVTOOLS__ = {
 		}
     },
 
-    setViewModelKeyValue: function(el, key, value) {
+    updateViewModel: function(el, data) {
         // if $0 is not in this frame, el will be null
         if (!el) {
             return this.makeIgnoreResponse("$0 is not in this frame");
         }
 
-        var can = this.can;
+        var can = this.canNamespace;
 
-        // the page that $0 is in may not have can
+        // handle the user having devtools open and navigating to a page without can
         if (!can) {
             return this.makeErrorResponse(this.NO_CAN_MSG);
         }
@@ -59,7 +60,10 @@ var __CANJS_DEVTOOLS__ = {
         var elementWithViewModel = this.getNearestElementWithViewModel(el, can);
 
         if (elementWithViewModel) {
-            can.Reflect.setKeyValue( elementWithViewModel[can.Symbol.for("can.viewModel")], key, value);
+            can.mergeDeep(
+                elementWithViewModel[can.Symbol.for("can.viewModel")],
+                data
+            );
         }
     },
 
@@ -69,21 +73,17 @@ var __CANJS_DEVTOOLS__ = {
             return this.makeIgnoreResponse("$0 is not in this frame");
         }
 
-        var can = this.can;
+        var can = this.canNamespace;
 
-        // the page that $0 is in may not have can
+        // handle the user having devtools open and navigating to a page without can
         if (!can) {
             return this.makeErrorResponse(this.NO_CAN_MSG);
-        }
-
-        if (!can.debug || !can.debug.getGraph || !can.debug.formatGraph) {
-            return this.makeErrorResponse("Graph methods are not available. Make sure to import `can-debug`.");
         }
 
         var hasViewModel = el[can.Symbol.for("can.viewModel")];
         var obj = hasViewModel ? hasViewModel : el;
 
-        var graphData = can.debug.formatGraph( can.debug.getGraph( obj, key ) );
+        var graphData = can.formatGraph( can.getGraph( obj, key ) );
 
 
         return this.makeSuccessResponse({
@@ -94,7 +94,7 @@ var __CANJS_DEVTOOLS__ = {
     },
 
     queuesStack: function() {
-        var can = this.can;
+        var can = this.canNamespace;
 
         if (!can) {
             // don't show an error for this because unlike ViewModel and Graph functions,
@@ -120,7 +120,7 @@ var __CANJS_DEVTOOLS__ = {
     },
 
     inspectTask(index) {
-        var can = this.can;
+        var can = this.canNamespace;
 
         if (!can) {
             return this.makeErrorResponse(this.NO_CAN_MSG);
