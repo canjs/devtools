@@ -8,7 +8,7 @@ can.Component.extend({
             <viewmodel-editor
                 tagName:from="tagName"
                 viewModelData:from="viewModelData"
-                setKeyValue:from="setKeyValue"
+                updateValues:from="updateValues"
             ></viewmodel-editor>
         {{/if}}
     `,
@@ -20,9 +20,9 @@ can.Component.extend({
 
         error: "string",
 
-        setKeyValue: function(key, value) {
+        updateValues: function(data) {
             window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction(
-                "setViewModelKeyValue($0, '" + key + "', '" + value + "')"
+                "updateViewModel($0, " + JSON.stringify(data) + ")"
             );
         },
 
