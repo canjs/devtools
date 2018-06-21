@@ -14,4 +14,4 @@ function injectScript(el) {
     el.appendChild(s);
 }
 
-injectScript( document.body );
+injectScript( document.documentElement );
