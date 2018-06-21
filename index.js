@@ -27,21 +27,6 @@ function initializeSidebar(name, location, page) {
             "sources",
             "queues-stack/index.html"
         );
-
-        // set the icon to the blue CanJS logo when the page is using CanJS
-        for (var i=0; i<frameURLs.length; i++) {
-            chrome.browserAction.setPopup({
-                tabId: registeredFrames[ frameURLs[i] ].tabId,
-                popup: "popups/can.html"
-            });
-
-            chrome.browserAction.setIcon({
-                tabId: registeredFrames[ frameURLs[i] ].tabId,
-                path: {
-                    "16": "images/canjs-16-enabled.png"
-                }
-            });
-        }
     } else {
         // popup and icon are default to the `no-can` version,
         // so don't need to be set here

@@ -9,6 +9,22 @@ var frames = {};
             type: "__CANJS_DEVTOOLS_UPDATE_FRAMES__",
             frames: frames
         });
+
+        // if there are active frames, update the icon/popup
+        // to the blue CanJS logo when the page is using CanJS
+        for (var i=0; i<frameURLs.length; i++) {
+            chrome.browserAction.setPopup({
+                tabId: frames[ frameURLs[i] ].tabId,
+                popup: "popups/can.html"
+            });
+
+            chrome.browserAction.setIcon({
+                tabId: frames[ frameURLs[i] ].tabId,
+                path: {
+                    "16": "images/canjs-16-enabled.png"
+                }
+            });
+        }
     }
 
     setTimeout(updateFrameURLs, 2000);
