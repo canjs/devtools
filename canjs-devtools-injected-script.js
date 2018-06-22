@@ -155,7 +155,7 @@ var __CANJS_DEVTOOLS__ = {
         return this.makeResponse("success", detail);
     },
 
-    NO_CAN_MSG: 'CanJS was not found on this page. If it is using CanJS, see the <a target="_blank" href="https://canjs.com/doc/guides/debugging.html">installation instructions</a>.',
+    NO_CAN_MSG: 'CanJS was not found on this page. If it is using CanJS, see the <a target="_blank" href="https://canjs.com/doc/guides/debugging.html#InstallingCanJSDevtools">installation instructions</a>.',
 
     /*
      * helper methods
