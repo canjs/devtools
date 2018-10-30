@@ -36,7 +36,7 @@ var __CANJS_DEVTOOLS__ = {
 		if (elementWithViewModel) {
 			return this.makeSuccessResponse({
                 type: "viewModel",
-				tagName: elementWithViewModel.tagName,
+				tagName: this.getUniqueTagName(elementWithViewModel),
 				viewModel: this.getSerializedViewModel( elementWithViewModel, can )
 			});
 		} else {
@@ -213,5 +213,21 @@ var __CANJS_DEVTOOLS__ = {
         }
 
         return Array.from(keysSet);
+    },
+
+    getUniqueTagName: function(el) {
+        var tagName = el.tagName.toLowerCase();
+        var index = 0;
+
+        var els = document.querySelectorAll(tagName);
+
+        Array.prototype.some.call(els, function(currentEl, currentIndex) {
+            if(currentEl === el) {
+                index = currentIndex;
+                return true;
+            }
+        });
+
+        return "<" + tagName + ">" + "[" + index + "]";
     }
 };
