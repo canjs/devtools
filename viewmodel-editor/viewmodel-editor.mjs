@@ -1,4 +1,6 @@
-can.Component.extend({
+import { Component, Reflect } from "../node_modules/can-devtools-components/dist/viewmodel-editor.mjs";
+
+Component.extend({
     tag: "canjs-devtools-viewmodel-editor",
 
     view: `
@@ -52,12 +54,12 @@ can.Component.extend({
                                 } else {
                                     if (vm.viewModelData) {
                                         if (detail.viewModel) {
-                                            can.Reflect.updateDeep(vm.viewModelData, detail.viewModel);
+                                            Reflect.updateDeep(vm.viewModelData, detail.viewModel);
                                         } else {
-                                            can.Reflect.deleteKeyValue(vm, "viewModelData");
+                                            Reflect.deleteKeyValue(vm, "viewModelData");
                                         }
                                     } else {
-                                        can.Reflect.setKeyValue(vm, "viewModelData", detail.viewModel);
+                                        Reflect.setKeyValue(vm, "viewModelData", detail.viewModel);
                                     }
                                 }
                                 break;

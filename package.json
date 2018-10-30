@@ -18,6 +18,6 @@
   },
   "homepage": "https://canjs.com",
   "dependencies": {
-    "can-devtools-components": "0.0.8"
+    "can-devtools-components": "^0.1.0"
   }
 }

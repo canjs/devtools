@@ -1,4 +1,6 @@
-can.Component.extend({
+import { Component, DefineMap, DefineList } from "../node_modules/can-devtools-components/dist/bindings-graph.mjs";
+
+Component.extend({
     tag: "canjs-devtools-bindings-graph",
 
     view: `
@@ -19,8 +21,8 @@ can.Component.extend({
     `,
 
     ViewModel: {
-        graphData: { Type: can.DefineMap, Default: can.DefineMap },
-        availableKeys: { Type: can.DefineList, Default: can.DefineList },
+        graphData: { Type: DefineMap, Default: DefineMap },
+        availableKeys: { Type: DefineList, Default: DefineList },
         selectedObj: "string",
         selectedKey: "string",
         error: "string",
@@ -48,7 +50,7 @@ can.Component.extend({
                                 if (detail.graphData) {
                                     vm.graphData = detail.graphData;
                                 } else {
-                                    can.Reflect.deleteKeyValue(vm, "graphData");
+                                    Reflect.deleteKeyValue(vm, "graphData");
                                 }
                                 break;
                         }

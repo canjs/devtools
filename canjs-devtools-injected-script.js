@@ -60,7 +60,7 @@ var __CANJS_DEVTOOLS__ = {
         var elementWithViewModel = this.getNearestElementWithViewModel(el, can);
 
         if (elementWithViewModel) {
-            can.mergeDeep(
+            can.Reflect.assignDeep(
                 elementWithViewModel[can.Symbol.for("can.viewModel")],
                 data
             );

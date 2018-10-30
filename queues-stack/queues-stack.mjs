@@ -1,4 +1,6 @@
-can.Component.extend({
+import { Component, DefineList } from "../node_modules/can-devtools-components/dist/queues-logstack.mjs";
+
+Component.extend({
     tag: "canjs-devtools-queues-stack",
 
     view: `
@@ -13,7 +15,7 @@ can.Component.extend({
     `,
 
     ViewModel: {
-        stack: { Type: can.DefineList, Default: can.DefineList },
+        stack: { Type: DefineList, Default: DefineList },
         error: "string",
         activeFrame: "string",
 
