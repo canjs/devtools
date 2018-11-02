@@ -217,17 +217,23 @@ var __CANJS_DEVTOOLS__ = {
 
     getUniqueTagName: function(el) {
         var tagName = el.tagName.toLowerCase();
-        var index = 0;
-
         var els = document.querySelectorAll(tagName);
 
-        Array.prototype.some.call(els, function(currentEl, currentIndex) {
-            if(currentEl === el) {
-                index = currentIndex;
-                return true;
-            }
-        });
+        tagName = "<" + tagName + ">";
 
-        return "<" + tagName + ">" + "[" + index + "]";
+        if (els.length > 1) {
+            var index = 0;
+
+            Array.prototype.some.call(els, function(currentEl, currentIndex) {
+                if(currentEl === el) {
+                    index = currentIndex;
+                    return true;
+                }
+            });
+
+            tagName = tagName + "[" + index + "]";
+        }
+
+        return tagName;
     }
 };
