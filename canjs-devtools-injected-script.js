@@ -110,10 +110,11 @@ var __CANJS_DEVTOOLS__ = {
 
             stack: stack.map(function(task) {
                 return {
-                    queue: task.meta.stack.name,
+                    queue: task.meta && task.meta.stack.name,
                     context: can.Reflect.getName(task.context),
-                    fn: can.Reflect.getName(task.fn),
-                    reason: task.meta && task.meta.reasonLog && task.meta.reasonLog.join(" ")
+                    functionName: can.Reflect.getName(task.fn),
+                    metaLog: task.meta && task.meta.log && task.meta.log.join(" "),
+                    metaReasonLog: task.meta && task.meta.reasonLog && task.meta.reasonLog.join(" ")
                 };
             })
         });

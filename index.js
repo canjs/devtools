@@ -1,6 +1,10 @@
-function initializeSidebar(name, location, page) {
+function initializeSidebar(name, location, page, height) {
     chrome.devtools.panels[location].createSidebarPane(name, function(sidebar) {
         sidebar.setPage(page);
+
+        if(height) {
+            sidebar.setHeight(height);
+        }
     });
 }
 
@@ -25,7 +29,8 @@ function initializeSidebar(name, location, page) {
         initializeSidebar(
             "CanJS Queues Stack",
             "sources",
-            "queues-stack/index.html"
+            "queues-stack/index.html",
+            "400px"
         );
     } else {
         // popup and icon are default to the `no-can` version,
