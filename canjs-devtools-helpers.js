@@ -12,8 +12,14 @@ window.CANJS_DEVTOOLS_HELPERS = {
             chrome.devtools.inspectedWindow.eval(
                 "typeof __CANJS_DEVTOOLS__ === 'object' && __CANJS_DEVTOOLS__." + fnString,
                 { frameURL: frameURLs[i] },
-                function(result, isException) {
-                    if (isException) {
+                function(result, exception) {
+                    if (exception) {
+                        // if there was an exception because we sent a message to a frame
+                        // that no longer exists, remove that frame's URL from registeredFrames
+                        // to prevent more exceptions before the next _UPDATE_FRAMES_ message
+                        if (exception.code === "E_NOTFOUND") {
+                            delete registeredFrames[ exception.details[0] ];
+                        }
                         return;
                     }
 
