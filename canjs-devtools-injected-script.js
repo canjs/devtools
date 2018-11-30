@@ -18,7 +18,7 @@ var __CANJS_DEVTOOLS__ = {
         document.dispatchEvent( registrationEvent );
     },
 
-	getViewModelData: function(el) {
+    getViewModelData: function(el) {
         // if $0 is not in this frame, el will be null
         if (!el) {
             return this.makeIgnoreResponse("$0 is not in this frame");
@@ -33,15 +33,15 @@ var __CANJS_DEVTOOLS__ = {
 
         var elementWithViewModel = this.getNearestElementWithViewModel(el, can);
 
-		if (elementWithViewModel) {
-			return this.makeSuccessResponse({
+        if (elementWithViewModel) {
+            return this.makeSuccessResponse({
                 type: "viewModel",
-				tagName: this.getUniqueTagName(elementWithViewModel),
-				viewModel: this.getSerializedViewModel( elementWithViewModel, can )
-			});
-		} else {
+                tagName: this.getUniqueTagName(elementWithViewModel),
+                viewModel: this.getSerializedViewModel( elementWithViewModel, can )
+            });
+        } else {
             return this.makeIgnoreResponse("&lt;" + el.tagName.toLowerCase() + "&gt; does not have a viewModel");
-		}
+        }
     },
 
     updateViewModel: function(el, data) {
