@@ -169,43 +169,33 @@
         getNearestElementWithViewModel: function(el) {
             var vm = el[viewModelSymbol];
             return vm ?
-                el :
-                el.parentNode ?
-                this.getNearestElementWithViewModel(el.parentNode) :
-                undefined;
+                    el :
+                    el.parentNode ?
+                        this.getNearestElementWithViewModel(el.parentNode) :
+                        undefined;
         },
 
         getSerializedViewModel: function(el) {
             var viewModel = el[viewModelSymbol];
-            var viewModelData = typeof viewModel.serialize === "function" ?
-                viewModel.serialize() :
-                JSON.parse( JSON.stringify(viewModel) );
+            var viewModelKeys = this.getViewModelKeys(el);
+            var viewModelData = {};
+            var key = "";
 
-            // if viewModel Type supports getOwnKeys, add any non-enumerable properties
-            if (viewModel[getOwnKeysSymbol]) {
-                var viewModelKeys = canReflect.getOwnKeys( viewModel );
-
-                for (var i=0; i<viewModelKeys.length; i++) {
-                    var key = viewModelKeys[i];
-                    if (!viewModelData[ key ]) {
-                        viewModelData[key] = canReflect.getKeyValue( viewModel, key );
-                    }
-                }
+            for (var i=0; i<viewModelKeys.length; i++) {
+                key = viewModelKeys[i];
+                viewModelData[ key ] = canReflect.getKeyValue( viewModel, key );
             }
 
-            // sort viewModel data in alphabetical order
-            var sortedViewModel = {};
-
-            Object.keys(viewModelData).sort().forEach(function(key) {
-                sortedViewModel[key] = viewModelData[key];
-            });
-
-            return sortedViewModel;
+            return viewModelData;
         },
 
-
         getViewModelKeys: function(el) {
-            return Object.keys( this.getSerializedViewModel(el) );
+            var viewModel = el[viewModelSymbol];
+            if (viewModel[getOwnKeysSymbol]) {
+                return canReflect.getOwnKeys( viewModel );
+            }
+
+            return [];
         },
 
         getElementKeys: function(el) {

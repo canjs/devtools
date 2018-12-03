@@ -6,10 +6,10 @@ import "../canjs-devtools-injected-script";
 
 const assert = chai.assert;
 
-describe("canjs-devtools-injected-script", function() {
+describe("canjs-devtools-injected-script", () => {
     let devtools;
 
-    beforeEach(function() {
+    beforeEach(() => {
         // register devtools
         debug();
 
@@ -20,41 +20,57 @@ describe("canjs-devtools-injected-script", function() {
         devtools = window.__CANJS_DEVTOOLS__;
     });
 
-    it("getViewModelData", function() {
-        const C = Component.extend({
-            tag: "a-pp",
-            view: "<p>{{name}}</p>",
-            ViewModel: {
-                first: { type: "string", default: "Kevin" },
-                last: { type: "string", default: "McCallister" },
-                get name() {
-                    return this.first + " " + this.last;
+    describe("getViewModelData", () => {
+        let el;
+
+        beforeEach(() => {
+            const C = Component.extend({
+                tag: "a-pp",
+                view: "<p>{{name}}</p>",
+                ViewModel: {
+                    first: { type: "string", default: "Kevin" },
+                    last: { type: "string", default: "McCallister" },
+                    get name() {
+                        return this.first + " " + this.last;
+                    }
                 }
-            }
-        }); 
+            });
 
-        const c = new C();
-        const el = c.element;
+            const c = new C();
+            el = c.element;
+        });
 
-        assert.deepEqual(
-            devtools.getViewModelData(el).detail.viewModel,
-            { first: "Kevin", last: "McCallister", name: "Kevin McCallister" },
-            "gets viewmodel data from element with a viewmodel"
-        );
+        it("works for elements with viewModels", () => {
+            let { viewModel, tagName, type } = devtools.getViewModelData(el).detail;
 
-        assert.deepEqual(
-            devtools.getViewModelData(el.querySelector("p")).detail.viewModel,
-            { first: "Kevin", last: "McCallister", name: "Kevin McCallister" },
-            "gets viewmodel data from child of element with a viewmodel"
-        );
+            assert.equal(type, "viewModel", "type");
+            assert.equal(tagName, "<a-pp>", "tagName");
+            assert.deepEqual(
+                viewModel,
+                { first: "Kevin", last: "McCallister", name: "Kevin McCallister" },
+                "viewModel"
+            );
+        });
+
+        it("works for children of elements with viewModels", () => {
+            let { viewModel, tagName, type } = devtools.getViewModelData(el.querySelector("p")).detail;
+
+            assert.equal(type, "viewModel", "type");
+            assert.equal(tagName, "<a-pp>", "tagName");
+            assert.deepEqual(
+                viewModel,
+                { first: "Kevin", last: "McCallister", name: "Kevin McCallister" },
+                "viewModel"
+            );
+        });
     });
 
-    it("getNearestElementWithViewModel", function() {
+    it("getNearestElementWithViewModel", () => {
         const C = Component.extend({
             tag: "a-pp",
             view: "<p>{{name}}</p>",
             ViewModel: { }
-        }); 
+        });
 
         const c = new C();
         const el = c.element;
@@ -73,7 +89,7 @@ describe("canjs-devtools-injected-script", function() {
 
     });
 
-    it("getSerializedViewModel", function() {
+    it("getSerializedViewModel", () => {
         const C = Component.extend({
             tag: "a-pp",
             view: "<p>{{name}}</p>",
@@ -84,7 +100,7 @@ describe("canjs-devtools-injected-script", function() {
                     return this.first + " " + this.last;
                 }
             }
-        }); 
+        });
 
         const c = new C();
         const el = c.element;
@@ -96,7 +112,7 @@ describe("canjs-devtools-injected-script", function() {
         );
     });
 
-    it("updateViewModel", function() {
+    it("updateViewModel", () => {
         const C = Component.extend({
             tag: "a-pp",
             view: "<p>{{name}}</p>",
@@ -107,7 +123,7 @@ describe("canjs-devtools-injected-script", function() {
                     return this.first + " " + this.last;
                 }
             }
-        }); 
+        });
 
         const c = new C();
         const el = c.element;
@@ -127,7 +143,7 @@ describe("canjs-devtools-injected-script", function() {
         );
     });
 
-    it("getViewModelKeys", function() {
+    it("getViewModelKeys", () => {
         const C = Component.extend({
             tag: "a-pp",
             view: "<p>{{name}}</p>",
@@ -138,7 +154,7 @@ describe("canjs-devtools-injected-script", function() {
                     return this.first + " " + this.last;
                 }
             }
-        }); 
+        });
 
         const c = new C();
         const el = c.element;
@@ -148,6 +164,5 @@ describe("canjs-devtools-injected-script", function() {
             [ "first", "last", "name" ],
             "gets viewmodel keys"
         );
-
     });
 });
