@@ -47,10 +47,13 @@
             var elementWithViewModel = this.getNearestElementWithViewModel(el);
 
             if (elementWithViewModel) {
+                var viewModel = elementWithViewModel[viewModelSymbol];
+
                 return this.makeSuccessResponse({
                     type: "viewModel",
                     tagName: this.getUniqueTagName(elementWithViewModel),
-                    viewModel: this.getSerializedViewModel(elementWithViewModel)
+                    viewModel: this.getSerializedViewModel(viewModel),
+                    namesByPath: this.getViewModelNamesByPath(viewModel)
                 });
             } else {
                 return this.makeIgnoreResponse("&lt;" + el.tagName.toLowerCase() + "&gt; does not have a viewModel");
@@ -94,9 +97,8 @@
 
             var graphData = formatGraph( getGraph( obj, key ) );
 
-
             return this.makeSuccessResponse({
-                availableKeys: hasViewModel ? this.getViewModelKeys(el) : this.getElementKeys(el),
+                availableKeys: hasViewModel ? this.getViewModelKeys(obj) : this.getElementKeys(el),
                 selectedObj: "<" + el.tagName.toLowerCase() + ">" + (hasViewModel ? ".viewModel" : ""),
                 graphData: graphData
             });
@@ -175,27 +177,48 @@
                         undefined;
         },
 
-        getSerializedViewModel: function(el) {
-            var viewModel = el[viewModelSymbol];
-            var viewModelKeys = this.getViewModelKeys(el);
+        getSerializedViewModel: function(viewModel) {
+            var viewModelKeys = this.getViewModelKeys(viewModel);
             var viewModelData = {};
             var key = "";
+            var value = undefined;
 
             for (var i=0; i<viewModelKeys.length; i++) {
                 key = viewModelKeys[i];
-                viewModelData[ key ] = canReflect.getKeyValue( viewModel, key );
+                value = canReflect.getKeyValue( viewModel, key );
+
+                if (typeof value === "object") {
+                    viewModelData[ key ] = canReflect.serialize( value );
+                } else {
+                    viewModelData[ key ] = value;
+                }
             }
 
             return viewModelData;
         },
 
-        getViewModelKeys: function(el) {
-            var viewModel = el[viewModelSymbol];
-            if (viewModel[getOwnKeysSymbol]) {
-                return canReflect.getOwnKeys( viewModel );
+        getViewModelNamesByPath: function(viewModel, parentPath) {
+            var viewModelKeys = this.getViewModelKeys(viewModel);
+            var namesByPath = { };
+            var key = "";
+            var value = undefined;
+            var path = "";
+
+            for (var i=0; i<viewModelKeys.length; i++) {
+                key = viewModelKeys[i];
+                value = canReflect.getKeyValue(viewModel, key);
+                if (value && typeof value === "object") {
+                    path = `${parentPath ? parentPath + "." : ""}${key}`;
+                    namesByPath[path] = canReflect.getName(value);
+                    Object.assign(namesByPath, this.getViewModelNamesByPath(value, path));
+                }
             }
 
-            return [];
+            return namesByPath;
+        },
+
+        getViewModelKeys: function(viewModel) {
+            return canReflect.getOwnKeys( viewModel );
         },
 
         getElementKeys: function(el) {

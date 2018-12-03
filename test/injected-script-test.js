@@ -1,68 +1,85 @@
 import mocha from "steal-mocha";
 import chai from "chai/chai";
 
-import { Component, debug } from "can";
+import { Component, DefineMap, DefineList, debug } from "can";
 import "../canjs-devtools-injected-script";
 
 const assert = chai.assert;
 
 describe("canjs-devtools-injected-script", () => {
-    let devtools;
+    let devtools, windowCan;
 
     beforeEach(() => {
         // register devtools
         debug();
 
         // make sure devtools is not using global `can`
+        windowCan = window.can;
         delete window.can;
 
         // get access to devtools functions
         devtools = window.__CANJS_DEVTOOLS__;
     });
 
-    describe("getViewModelData", () => {
-        let el;
+    afterEach(() => {
+        window.can = windowCan;
+    });
 
-        beforeEach(() => {
-            const C = Component.extend({
-                tag: "a-pp",
-                view: "<p>{{name}}</p>",
-                ViewModel: {
-                    first: { type: "string", default: "Kevin" },
-                    last: { type: "string", default: "McCallister" },
-                    get name() {
-                        return this.first + " " + this.last;
-                    }
+    it("getViewModelData", () => {
+        const C = Component.extend({
+            tag: "a-pp",
+            view: "<p>{{name}}</p>",
+            ViewModel: {
+                first: { type: "string", default: "Kevin" },
+                last: { type: "string", default: "McCallister" },
+                get name() {
+                    return this.first + " " + this.last;
                 }
-            });
-
-            const c = new C();
-            el = c.element;
+            }
         });
 
-        it("works for elements with viewModels", () => {
-            let { viewModel, tagName, type } = devtools.getViewModelData(el).detail;
+        const c = new C();
+        const el = c.element;
 
-            assert.equal(type, "viewModel", "type");
-            assert.equal(tagName, "<a-pp>", "tagName");
-            assert.deepEqual(
-                viewModel,
-                { first: "Kevin", last: "McCallister", name: "Kevin McCallister" },
-                "viewModel"
-            );
-        });
+        const {
+            viewModel: viewModelFromEl,
+            tagName: tagNameFromEl,
+            type: typeFromEl,
+            namesByPath: namesByPathFromEl
+        } = devtools.getViewModelData(el).detail;
 
-        it("works for children of elements with viewModels", () => {
-            let { viewModel, tagName, type } = devtools.getViewModelData(el.querySelector("p")).detail;
+        assert.equal(typeFromEl, "viewModel", "type from el");
+        assert.equal(tagNameFromEl, "<a-pp>", "tagName from el");
+        assert.deepEqual(
+            viewModelFromEl,
+            { first: "Kevin", last: "McCallister", name: "Kevin McCallister" },
+            "viewModel from el"
+        );
+        assert.deepEqual(
+            namesByPathFromEl,
+            {},
+            "namesByPath from el"
+        );
 
-            assert.equal(type, "viewModel", "type");
-            assert.equal(tagName, "<a-pp>", "tagName");
-            assert.deepEqual(
-                viewModel,
-                { first: "Kevin", last: "McCallister", name: "Kevin McCallister" },
-                "viewModel"
-            );
-        });
+        const {
+            viewModel: viewModelFromChild,
+            tagName: tagNameFromChild,
+            type: typeFromChild,
+            namesByPath: namesByPathFromChild
+        } = devtools.getViewModelData(el.querySelector("p")).detail;
+
+        assert.equal(typeFromChild, "viewModel", "type from child of el");
+        assert.equal(tagNameFromChild, "<a-pp>", "tagName from child of el");
+        assert.deepEqual(
+            viewModelFromChild,
+            { first: "Kevin", last: "McCallister", name: "Kevin McCallister" },
+            "viewModel from child of el"
+        );
+        assert.deepEqual(
+            namesByPathFromChild,
+            {},
+            "namesByPath from child of el"
+        );
     });
 
     it("getNearestElementWithViewModel", () => {
@@ -90,25 +107,126 @@ describe("canjs-devtools-injected-script", () => {
     });
 
     it("getSerializedViewModel", () => {
-        const C = Component.extend({
-            tag: "a-pp",
-            view: "<p>{{name}}</p>",
-            ViewModel: {
-                first: { type: "string", default: "Kevin" },
-                last: { type: "string", default: "McCallister" },
-                get name() {
-                    return this.first + " " + this.last;
+        let VM = DefineMap.extend({
+            name: "string"
+        });
+
+        assert.deepEqual(
+            devtools.getSerializedViewModel(new VM()),
+            { name: undefined },
+            "works for basic ViewModel"
+        );
+
+        VM = DefineMap.extend({
+            first: { type: "string", default: "Kevin" },
+            last: { type: "string", default: "McCallister" },
+            get name() {
+                return this.first + " " + this.last;
+            }
+        });
+
+        assert.deepEqual(
+            devtools.getSerializedViewModel(new VM()),
+            { first: "Kevin", last: "McCallister", name: "Kevin McCallister" },
+            "works for ViewModel with serialized properties"
+        );
+
+        VM = DefineMap.extend({
+            hobbies: {
+                default() {
+                    return [{ name: "singing" }, { name: "dancing" }];
                 }
             }
         });
 
-        const c = new C();
-        const el = c.element;
+        assert.deepEqual(
+            devtools.getSerializedViewModel(new VM()),
+            { hobbies: [{ name: "singing" }, { name: "dancing" }] },
+            "works for DefineMap with nested array"
+        );
+
+        VM = DefineMap.extend({
+            hobbies: {
+                Type: DefineList.extend("Hobbies", {
+                    "#": DefineMap.extend("Hobby", {
+                        name: "string"
+                    })
+                }),
+                default() {
+                    return [{ name: "singing" }, { name: "dancing" }];
+                }
+            }
+        });
 
         assert.deepEqual(
-            devtools.getSerializedViewModel(el),
-            { first: "Kevin", last: "McCallister", name: "Kevin McCallister" },
-            "gets viewmodel data"
+            devtools.getSerializedViewModel(new VM()),
+            { hobbies: [{ name: "singing" }, { name: "dancing" }] },
+            "works for nested DefineMaps"
+        );
+    });
+
+    it("getViewModelNamesByPath", () => {
+        const Thing = DefineMap.extend("AThing", {});
+        let ViewModel = DefineMap.extend("ViewModel", {
+            aThing: { Type: Thing, Default: Thing }
+        });
+
+        assert.deepEqual(
+            devtools.getViewModelNamesByPath(new ViewModel()),
+            { aThing: "AThing{}" },
+            "AThing{}"
+        );
+
+        const ListOfThings = DefineList.extend("ListOfThings", {
+            "#": Thing
+        });
+        ViewModel = DefineMap.extend("ViewModel", {
+            things: { Type: ListOfThings, default: () => [{}] }
+        });
+
+        let { things: thingsName, "things.0": thingName } = devtools.getViewModelNamesByPath(new ViewModel());
+        assert.equal(
+            thingsName,
+            "ListOfThings[]",
+            "ListOfThings[]"
+        );
+        assert.equal(
+            thingName,
+            "AThing{}",
+            "AThing{}"
+        );
+
+        const Name = DefineMap.extend("Name", {});
+        const NamedThing = DefineMap.extend("NamedThing", {
+            name: Name
+        });
+        const ListOfNamedThings = DefineList.extend("ListOfNamedThings", {
+            "#": NamedThing
+        });
+        ViewModel = DefineMap.extend("ViewModel", {
+            things: { Type: ListOfNamedThings, default: () => [{ name: {} }] }
+        });
+
+        let {
+            things: namedThingsName,
+            "things.0": namedThingName,
+            "things.0.name": namedThingsNameName
+        } = devtools.getViewModelNamesByPath(new ViewModel());
+
+        assert.equal(
+            namedThingsName,
+            "ListOfNamedThings[]",
+            "ListOfNamedThings[]"
+        );
+        assert.equal(
+            namedThingName,
+            "NamedThing{}",
+            "NamedThing{}"
+        );
+        assert.equal(
+            namedThingsNameName,
+            "Name{}",
+            "Name{}"
         );
     });
 
@@ -126,10 +244,11 @@ describe("canjs-devtools-injected-script", () => {
         });
 
         const c = new C();
+        const vm = c.viewModel;
         const el = c.element;
 
         assert.deepEqual(
-            devtools.getSerializedViewModel(el),
+            devtools.getSerializedViewModel(vm),
             { first: "Kevin", last: "McCallister", name: "Kevin McCallister" },
             "default viewmodel data"
         );
@@ -137,7 +256,7 @@ describe("canjs-devtools-injected-script", () => {
         devtools.updateViewModel(el, { first: "Marty", last: "McFly" });
 
         assert.deepEqual(
-            devtools.getSerializedViewModel(el),
+            devtools.getSerializedViewModel(vm),
             { first: "Marty", last: "McFly", name: "Marty McFly" },
             "updated viewmodel data"
         );
@@ -157,10 +276,10 @@ describe("canjs-devtools-injected-script", () => {
         });
 
         const c = new C();
-        const el = c.element;
+        const vm = c.viewModel;
 
         assert.deepEqual(
-            devtools.getViewModelKeys(el),
+            devtools.getViewModelKeys(vm),
             [ "first", "last", "name" ],
             "gets viewmodel keys"
         );
