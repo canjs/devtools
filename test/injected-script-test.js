@@ -76,13 +76,13 @@ describe("canjs-devtools-injected-script", () => {
         const el = c.element;
 
         assert.deepEqual(
-            devtools.getNearestElementWithViewModel(el, devtools.canNamespace),
+            devtools.getNearestElementWithViewModel(el),
             el,
             "gets element from element with a viewmodel"
         );
 
         assert.deepEqual(
-            devtools.getNearestElementWithViewModel(el.querySelector("p"), devtools.canNamespace),
+            devtools.getNearestElementWithViewModel(el.querySelector("p")),
             el,
             "gets element from child of element with a viewmodel"
         );
@@ -106,7 +106,7 @@ describe("canjs-devtools-injected-script", () => {
         const el = c.element;
 
         assert.deepEqual(
-            devtools.getSerializedViewModel(el, devtools.canNamespace),
+            devtools.getSerializedViewModel(el),
             { first: "Kevin", last: "McCallister", name: "Kevin McCallister" },
             "gets viewmodel data"
         );
@@ -129,7 +129,7 @@ describe("canjs-devtools-injected-script", () => {
         const el = c.element;
 
         assert.deepEqual(
-            devtools.getSerializedViewModel(el, devtools.canNamespace),
+            devtools.getSerializedViewModel(el),
             { first: "Kevin", last: "McCallister", name: "Kevin McCallister" },
             "default viewmodel data"
         );
@@ -137,7 +137,7 @@ describe("canjs-devtools-injected-script", () => {
         devtools.updateViewModel(el, { first: "Marty", last: "McFly" });
 
         assert.deepEqual(
-            devtools.getSerializedViewModel(el, devtools.canNamespace),
+            devtools.getSerializedViewModel(el),
             { first: "Marty", last: "McFly", name: "Marty McFly" },
             "updated viewmodel data"
         );
@@ -160,7 +160,7 @@ describe("canjs-devtools-injected-script", () => {
         const el = c.element;
 
         assert.deepEqual(
-            devtools.getViewModelKeys(el, devtools.canNamespace),
+            devtools.getViewModelKeys(el),
             [ "first", "last", "name" ],
             "gets viewmodel keys"
         );
