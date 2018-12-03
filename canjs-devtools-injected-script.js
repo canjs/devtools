@@ -1,5 +1,5 @@
 // expose devtools namespace on the window
-var __CANJS_DEVTOOLS__ = {
+window.__CANJS_DEVTOOLS__ = {
     /*
      * object containing CanJS modules that are used by methods below
      * this is set by can-debug calling `register`
@@ -37,7 +37,7 @@ var __CANJS_DEVTOOLS__ = {
             return this.makeSuccessResponse({
                 type: "viewModel",
                 tagName: this.getUniqueTagName(elementWithViewModel),
-                viewModel: this.getSerializedViewModel( elementWithViewModel, can )
+                viewModel: this.getSerializedViewModel(elementWithViewModel, can)
             });
         } else {
             return this.makeIgnoreResponse("&lt;" + el.tagName.toLowerCase() + "&gt; does not have a viewModel");

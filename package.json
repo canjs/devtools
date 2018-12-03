@@ -12,6 +12,9 @@
     "email": "contact@bitovi.com",
     "web": "http://bitovi.com/"
   },
+  "scripts": {
+    "test": "testee test/test.html --browsers firefox"
+  },
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/canjs/devtools/issues"
@@ -19,5 +22,12 @@
   "homepage": "https://canjs.com",
   "dependencies": {
     "can-devtools-components": "^0.2.1"
+  },
+  "devDependencies": {
+    "can": "^5.17.2",
+    "chai": "^4.2.0",
+    "steal": "^2.1.10",
+    "steal-mocha": "^2.0.1",
+    "testee": "^0.8.1"
   }
 }
