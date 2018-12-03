@@ -13,6 +13,9 @@ describe("canjs-devtools-injected-script", function() {
         // register devtools
         debug();
 
+        // make sure devtools is not using global `can`
+        delete window.can;
+
         // get access to devtools functions
         devtools = window.__CANJS_DEVTOOLS__;
     });

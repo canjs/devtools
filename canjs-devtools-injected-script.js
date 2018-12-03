@@ -1,240 +1,246 @@
-// expose devtools namespace on the window
-window.__CANJS_DEVTOOLS__ = {
-    /*
-     * object containing CanJS modules that are used by methods below
-     * this is set by can-debug calling `register`
-     */
-    canNamespace: null,
+(function() {
+    // CanJS modules set up by register function
+    var viewModelSymbol,
+        getOwnKeysSymbol,
+        canReflect,
+        canQueues,
+        getGraph,
+        formatGraph,
+        mergeDeep;
 
-    /*
-     * methods called by devtools panels
-     */
-    register: function(canNamespace) {
-        this.canNamespace = canNamespace;
+    // expose devtools namespace on the window
+    window.__CANJS_DEVTOOLS__ = {
+        // flag indicating whether register has been called
+        registered: false,
 
-        // register page so inspectedWindow.eval can call devtools functions in this frame
-        var registrationEvent = new CustomEvent("__CANJS_DEVTOOLS_REGISTER__");
+        /*
+         * methods called by devtools panels
+         */
+        register: function(can) {
+            viewModelSymbol = can.Symbol.for("can.viewModel");
+            getOwnKeysSymbol = can.Symbol.for("can.getOwnKeys");
+            canReflect = can.Reflect;
+            canQueues = can.queues;
+            getGraph = can.getGraph;
+            formatGraph = can.formatGraph;
+            mergeDeep = can.mergeDeep;
 
-        document.dispatchEvent( registrationEvent );
-    },
+            // register page so inspectedWindow.eval can call devtools functions in this frame
+            var registrationEvent = new CustomEvent("__CANJS_DEVTOOLS_REGISTER__");
 
-    getViewModelData: function(el) {
-        // if $0 is not in this frame, el will be null
-        if (!el) {
-            return this.makeIgnoreResponse("$0 is not in this frame");
-        }
+            document.dispatchEvent( registrationEvent );
 
-        var can = this.canNamespace;
+            this.registered = true;
+        },
 
-        // handle the user having devtools open and navigating to a page without can
-        if (!can) {
-            return this.makeErrorResponse(this.NO_CAN_MSG);
-        }
+        getViewModelData: function(el) {
+            // if $0 is not in this frame, el will be null
+            if (!el) {
+                return this.makeIgnoreResponse("$0 is not in this frame");
+            }
 
-        var elementWithViewModel = this.getNearestElementWithViewModel(el, can);
+            // handle the user having devtools open and navigating to a page without can
+            if (!this.registered) {
+                return this.makeErrorResponse(this.NO_CAN_MSG);
+            }
 
-        if (elementWithViewModel) {
+            var elementWithViewModel = this.getNearestElementWithViewModel(el);
+
+            if (elementWithViewModel) {
+                return this.makeSuccessResponse({
+                    type: "viewModel",
+                    tagName: this.getUniqueTagName(elementWithViewModel),
+                    viewModel: this.getSerializedViewModel(elementWithViewModel)
+                });
+            } else {
+                return this.makeIgnoreResponse("&lt;" + el.tagName.toLowerCase() + "&gt; does not have a viewModel");
+            }
+        },
+
+        updateViewModel: function(el, data) {
+            // if $0 is not in this frame, el will be null
+            if (!el) {
+                return this.makeIgnoreResponse("$0 is not in this frame");
+            }
+
+            // handle the user having devtools open and navigating to a page without can
+            if (!this.registered) {
+                return this.makeErrorResponse(this.NO_CAN_MSG);
+            }
+
+            var elementWithViewModel = this.getNearestElementWithViewModel(el);
+
+            if (elementWithViewModel) {
+                canReflect.assignDeep(
+                    elementWithViewModel[viewModelSymbol],
+                    data
+                );
+            }
+        },
+
+        getBindingsGraphData: function(el, key) {
+            // if $0 is not in this frame, el will be null
+            if (!el) {
+                return this.makeIgnoreResponse("$0 is not in this frame");
+            }
+
+            // handle the user having devtools open and navigating to a page without can
+            if (!this.registered) {
+                return this.makeErrorResponse(this.NO_CAN_MSG);
+            }
+
+            var hasViewModel = el[viewModelSymbol];
+            var obj = hasViewModel ? hasViewModel : el;
+
+            var graphData = formatGraph( getGraph( obj, key ) );
+
+
             return this.makeSuccessResponse({
-                type: "viewModel",
-                tagName: this.getUniqueTagName(elementWithViewModel),
-                viewModel: this.getSerializedViewModel(elementWithViewModel, can)
+                availableKeys: hasViewModel ? this.getViewModelKeys(el) : this.getElementKeys(el),
+                selectedObj: "<" + el.tagName.toLowerCase() + ">" + (hasViewModel ? ".viewModel" : ""),
+                graphData: graphData
             });
-        } else {
-            return this.makeIgnoreResponse("&lt;" + el.tagName.toLowerCase() + "&gt; does not have a viewModel");
-        }
-    },
+        },
 
-    updateViewModel: function(el, data) {
-        // if $0 is not in this frame, el will be null
-        if (!el) {
-            return this.makeIgnoreResponse("$0 is not in this frame");
-        }
+        queuesStack: function() {
+            if (!this.registered) {
+                // don't show an error for this because unlike ViewModel and Graph functions,
+                // this can't check if it is the correct frame by using $0.
+                // So just assume it's not the correct frame if register hasn't been called.
+                return this.makeIgnoreResponse(this.NO_CAN_MSG);
+            }
 
-        var can = this.canNamespace;
+            var stack = canQueues.stack();
 
-        // handle the user having devtools open and navigating to a page without can
-        if (!can) {
-            return this.makeErrorResponse(this.NO_CAN_MSG);
-        }
+            return this.makeSuccessResponse({
+                frameURL: window.location.href,
 
-        var elementWithViewModel = this.getNearestElementWithViewModel(el, can);
+                stack: stack.map(function(task) {
+                    return {
+                        queue: task.meta && task.meta.stack.name,
+                        context: canReflect.getName(task.context),
+                        functionName: canReflect.getName(task.fn),
+                        metaLog: task.meta && task.meta.log && task.meta.log.join(" "),
+                        metaReasonLog: task.meta && task.meta.reasonLog && task.meta.reasonLog.join(" ")
+                    };
+                })
+            });
+        },
 
-        if (elementWithViewModel) {
-            can.Reflect.assignDeep(
-                elementWithViewModel[can.Symbol.for("can.viewModel")],
-                data
-            );
-        }
-    },
+        inspectTask(index) {
+            if (!this.registered) {
+                return this.makeErrorResponse(this.NO_CAN_MSG);
+            }
 
-    getBindingsGraphData: function(el, key) {
-        // if $0 is not in this frame, el will be null
-        if (!el) {
-            return this.makeIgnoreResponse("$0 is not in this frame");
-        }
+            var stack = canQueues.stack();
 
-        var can = this.canNamespace;
+            if (stack && stack[index] && stack[index].fn) {
+                inspect( stack[index].fn );
+            }
+        },
 
-        // handle the user having devtools open and navigating to a page without can
-        if (!can) {
-            return this.makeErrorResponse(this.NO_CAN_MSG);
-        }
+        /*
+         * methods used to build responses
+         */
+        makeResponse(status, detail) {
+            return {
+                status: status,
+                detail: detail
+            };
+        },
 
-        var hasViewModel = el[can.Symbol.for("can.viewModel")];
-        var obj = hasViewModel ? hasViewModel : el;
+        makeIgnoreResponse(detail) {
+            return this.makeResponse("ignore", detail);
+        },
 
-        var graphData = can.formatGraph( can.getGraph( obj, key ) );
+        makeErrorResponse: function(detail) {
+            return this.makeResponse("error", detail);
+        },
 
+        makeSuccessResponse: function(detail) {
+            return this.makeResponse("success", detail);
+        },
 
-        return this.makeSuccessResponse({
-            availableKeys: hasViewModel ? this.getViewModelKeys(el, can) : this.getElementKeys(el),
-            selectedObj: "<" + el.tagName.toLowerCase() + ">" + (hasViewModel ? ".viewModel" : ""),
-            graphData: graphData
-        });
-    },
+        NO_CAN_MSG: 'CanJS was not found on this page. If it is using CanJS, see the <a target="_blank" href="https://canjs.com/doc/guides/debugging.html#InstallingCanJSDevtools">installation instructions</a>.',
 
-    queuesStack: function() {
-        var can = this.canNamespace;
+        /*
+         * helper methods
+         */
+        getNearestElementWithViewModel: function(el) {
+            var vm = el[viewModelSymbol];
+            return vm ?
+                el :
+                el.parentNode ?
+                this.getNearestElementWithViewModel(el.parentNode) :
+                undefined;
+        },
 
-        if (!can) {
-            // don't show an error for this because unlike ViewModel and Graph functions,
-            // this can't check if it is the correct frame by using $0.
-            // So just assume it's not the correct frame if `window.can` is undefined.
-            return this.makeIgnoreResponse(this.NO_CAN_MSG);
-        }
+        getSerializedViewModel: function(el) {
+            var viewModel = el[viewModelSymbol];
+            var viewModelData = typeof viewModel.serialize === "function" ?
+                viewModel.serialize() :
+                JSON.parse( JSON.stringify(viewModel) );
 
-        var stack = can.queues.stack();
+            // if viewModel Type supports getOwnKeys, add any non-enumerable properties
+            if (viewModel[getOwnKeysSymbol]) {
+                var viewModelKeys = canReflect.getOwnKeys( viewModel );
 
-        return this.makeSuccessResponse({
-            frameURL: window.location.href,
-
-            stack: stack.map(function(task) {
-                return {
-                    queue: task.meta && task.meta.stack.name,
-                    context: can.Reflect.getName(task.context),
-                    functionName: can.Reflect.getName(task.fn),
-                    metaLog: task.meta && task.meta.log && task.meta.log.join(" "),
-                    metaReasonLog: task.meta && task.meta.reasonLog && task.meta.reasonLog.join(" ")
-                };
-            })
-        });
-    },
-
-    inspectTask(index) {
-        var can = this.canNamespace;
-
-        if (!can) {
-            return this.makeErrorResponse(this.NO_CAN_MSG);
-        }
-
-        var stack = can.queues.stack();
-
-        if (stack && stack[index] && stack[index].fn) {
-            inspect( stack[index].fn );
-        }
-    },
-
-    /*
-     * methods used to build responses
-     */
-    makeResponse(status, detail) {
-        return {
-            status: status,
-            detail: detail
-        };
-    },
-
-    makeIgnoreResponse(detail) {
-        return this.makeResponse("ignore", detail);
-    },
-
-    makeErrorResponse: function(detail) {
-        return this.makeResponse("error", detail);
-    },
-
-    makeSuccessResponse: function(detail) {
-        return this.makeResponse("success", detail);
-    },
-
-    NO_CAN_MSG: 'CanJS was not found on this page. If it is using CanJS, see the <a target="_blank" href="https://canjs.com/doc/guides/debugging.html#InstallingCanJSDevtools">installation instructions</a>.',
-
-    /*
-     * helper methods
-     */
-    getNearestElementWithViewModel: function(el, can) {
-        var vm = el[can.Symbol.for("can.viewModel")];
-        return vm ?
-            el :
-            el.parentNode ?
-            this.getNearestElementWithViewModel(el.parentNode, can) :
-            undefined;
-    },
-
-    getSerializedViewModel: function(el, can) {
-        var viewModel = el[can.Symbol.for("can.viewModel")];
-        var viewModelData = typeof viewModel.serialize === "function" ?
-            viewModel.serialize() :
-            JSON.parse( JSON.stringify(viewModel) );
-
-        // if viewModel Type supports getOwnKeys, add any non-enumerable properties
-        if (viewModel[ can.Symbol.for( "can.getOwnKeys" ) ]) {
-            var viewModelKeys = can.Reflect.getOwnKeys( viewModel );
-
-            for (var i=0; i<viewModelKeys.length; i++) {
-                var key = viewModelKeys[i];
-                if (!viewModelData[ key ]) {
-                    viewModelData[key] = can.Reflect.getKeyValue( viewModel, key );
+                for (var i=0; i<viewModelKeys.length; i++) {
+                    var key = viewModelKeys[i];
+                    if (!viewModelData[ key ]) {
+                        viewModelData[key] = canReflect.getKeyValue( viewModel, key );
+                    }
                 }
             }
-        }
 
-        // sort viewModel data in alphabetical order
-        var sortedViewModel = {};
+            // sort viewModel data in alphabetical order
+            var sortedViewModel = {};
 
-        Object.keys(viewModelData).sort().forEach(function(key) {
-            sortedViewModel[key] = viewModelData[key];
-        });
-
-        return sortedViewModel;
-    },
-
-
-    getViewModelKeys: function(el, can) {
-        return Object.keys( this.getSerializedViewModel(el, can) );
-    },
-
-    getElementKeys: function(el) {
-        var keysSet = new Set([]);
-        var keysMap = el.attributes;
-
-        for (var i=0; i<keysMap.length; i++) {
-            var key = keysMap[i].name.split(/:to|:from|:bind/)[0];
-            key = key.split(":")[key.split(":").length - 1]
-            keysSet.add( key );
-        }
-
-        return Array.from(keysSet);
-    },
-
-    getUniqueTagName: function(el) {
-        var tagName = el.tagName.toLowerCase();
-        var els = document.querySelectorAll(tagName);
-
-        tagName = "<" + tagName + ">";
-
-        if (els.length > 1) {
-            var index = 0;
-
-            Array.prototype.some.call(els, function(currentEl, currentIndex) {
-                if(currentEl === el) {
-                    index = currentIndex;
-                    return true;
-                }
+            Object.keys(viewModelData).sort().forEach(function(key) {
+                sortedViewModel[key] = viewModelData[key];
             });
 
-            tagName = tagName + "[" + index + "]";
-        }
+            return sortedViewModel;
+        },
 
-        return tagName;
-    }
-};
+
+        getViewModelKeys: function(el) {
+            return Object.keys( this.getSerializedViewModel(el) );
+        },
+
+        getElementKeys: function(el) {
+            var keysSet = new Set([]);
+            var keysMap = el.attributes;
+
+            for (var i=0; i<keysMap.length; i++) {
+                var key = keysMap[i].name.split(/:to|:from|:bind/)[0];
+                key = key.split(":")[key.split(":").length - 1]
+                keysSet.add( key );
+            }
+
+            return Array.from(keysSet);
+        },
+
+        getUniqueTagName: function(el) {
+            var tagName = el.tagName.toLowerCase();
+            var els = document.querySelectorAll(tagName);
+
+            tagName = "<" + tagName + ">";
+
+            if (els.length > 1) {
+                var index = 0;
+
+                Array.prototype.some.call(els, function(currentEl, currentIndex) {
+                    if(currentEl === el) {
+                        index = currentIndex;
+                        return true;
+                    }
+                });
+
+                tagName = tagName + "[" + index + "]";
+            }
+
+            return tagName;
+        }
+    };
+}());
