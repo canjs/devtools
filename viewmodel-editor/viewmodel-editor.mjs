@@ -10,6 +10,7 @@ Component.extend({
             <viewmodel-editor
                 tagName:from="tagName"
                 viewModelData:from="viewModelData"
+                typeNamesData:from="typeNamesData"
                 updateValues:from="updateValues"
             ></viewmodel-editor>
         {{/if}}
@@ -17,9 +18,8 @@ Component.extend({
 
     ViewModel: {
         tagName: "string",
-
         viewModelData: "observable",
-
+        typeNamesData: "observable",
         error: "string",
 
         updateValues: function(data) {
@@ -51,6 +51,7 @@ Component.extend({
                                     vm.error = null;
                                     vm.tagName = detail.tagName;
                                     vm.viewModelData = detail.viewModel;
+                                    vm.typeNamesData = detail.namesByPath;
                                 } else {
                                     if (vm.viewModelData) {
                                         if (detail.viewModel) {
