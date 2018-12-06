@@ -28,7 +28,7 @@
             // register page so inspectedWindow.eval can call devtools functions in this frame
             var registrationEvent = new CustomEvent("__CANJS_DEVTOOLS_REGISTER__");
 
-            document.dispatchEvent( registrationEvent );
+            document.dispatchEvent(registrationEvent);
 
             this.registered = true;
         },
@@ -95,7 +95,7 @@
             var hasViewModel = el[viewModelSymbol];
             var obj = hasViewModel ? hasViewModel : el;
 
-            var graphData = formatGraph( getGraph( obj, key ) );
+            var graphData = formatGraph( getGraph(obj, key) );
 
             return this.makeSuccessResponse({
                 availableKeys: hasViewModel ? this.getViewModelKeys(obj) : this.getElementKeys(el),
@@ -137,7 +137,7 @@
             var stack = canQueues.stack();
 
             if (stack && stack[index] && stack[index].fn) {
-                inspect( stack[index].fn );
+                inspect(stack[index].fn);
             }
         },
 
@@ -185,12 +185,12 @@
 
             for (var i=0; i<viewModelKeys.length; i++) {
                 key = viewModelKeys[i];
-                value = canReflect.getKeyValue( viewModel, key );
+                value = canReflect.getKeyValue(viewModel, key);
 
                 if (typeof value === "object") {
-                    viewModelData[ key ] = canReflect.serialize( value );
+                    viewModelData[key] = canReflect.serialize(value);
                 } else {
-                    viewModelData[ key ] = value;
+                    viewModelData[key] = value;
                 }
             }
 
@@ -228,7 +228,7 @@
             for (var i=0; i<keysMap.length; i++) {
                 var key = keysMap[i].name.split(/:to|:from|:bind/)[0];
                 key = key.split(":")[key.split(":").length - 1]
-                keysSet.add( key );
+                keysSet.add(key);
             }
 
             return Array.from(keysSet);
