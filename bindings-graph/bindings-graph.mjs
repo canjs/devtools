@@ -31,9 +31,9 @@ Component.extend({
             var vm = this;
 
             var loadGraphData = function() {
-                window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction(
-                    "getBindingsGraphData($0, '" + vm.selectedKey + "')",
-                    function(result) {
+                window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
+                    fnString: "getBindingsGraphData($0, '" + vm.selectedKey + "')",
+                    success: function(result) {
                         var status = result.status;
                         var detail = result.detail;
 
@@ -55,7 +55,7 @@ Component.extend({
                                 break;
                         }
                     }
-                );
+                });
             };
 
             // there is a slight delay between when the devtools panel is opened

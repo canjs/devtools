@@ -163,6 +163,20 @@ describe("canjs-devtools-injected-script", () => {
             { hobbies: [{ name: "singing" }, { name: "dancing" }] },
             "works for nested DefineMaps"
         );
+
+        VM = DefineMap.extend({
+            element: {
+                default() {
+                    return document.createElement("p");
+                }
+            }
+        });
+
+        assert.deepEqual(
+            devtools.getSerializedViewModel(new VM()),
+            { element: {} },
+            "works DefineMaps with elements on them"
+        );
     });
 
     it("getViewModelNamesByPath", () => {
@@ -277,11 +291,18 @@ describe("canjs-devtools-injected-script", () => {
 
         const c = new C();
         const vm = c.viewModel;
+        const el = c.element;
 
         assert.deepEqual(
             devtools.getViewModelKeys(vm),
             [ "first", "last", "name" ],
             "gets viewmodel keys"
+        );
+
+        assert.deepEqual(
+            devtools.getViewModelKeys(el),
+            [],
+            "gets no keys for element"
         );
     });
 });

@@ -23,56 +23,52 @@ Component.extend({
         error: "string",
 
         updateValues: function(data) {
-            window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction(
-                "updateViewModel($0, " + JSON.stringify(data) + ")"
-            );
+            window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
+                fnString: "updateViewModel($0, " + JSON.stringify(data) + ")"
+            });
         },
 
         connectedCallback() {
             var vm = this;
-            var timeoutId;
 
-            (function getSelectedElementData() {
-                window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction(
-                    "getViewModelData($0)",
-                    function(result) {
-                        var status = result.status;
-                        var detail = result.detail;
+            var stopRefreshing = window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
+                fnString: "getViewModelData($0)",
+                refreshInterval: 100,
+                success: function(result) {
+                    var status = result.status;
+                    var detail = result.detail;
 
-                        switch(status) {
-                            case "ignore":
-                                break;
-                            case "error":
-                                vm.error = detail;
-                                break;
-                            case "success":
-                                // if selected element changed, remove viewModel completely
-                                if (vm.tagName !== detail.tagName) {
-                                    vm.error = null;
-                                    vm.tagName = detail.tagName;
-                                    vm.viewModelData = detail.viewModel;
-                                    vm.typeNamesData = detail.namesByPath;
-                                } else {
-                                    if (vm.viewModelData) {
-                                        if (detail.viewModel) {
-                                            Reflect.updateDeep(vm.viewModelData, detail.viewModel);
-                                        } else {
-                                            Reflect.deleteKeyValue(vm, "viewModelData");
-                                        }
+                    switch(status) {
+                        case "ignore":
+                            break;
+                        case "error":
+                            vm.error = detail;
+                            break;
+                        case "success":
+                            // if selected element changed, remove viewModel completely
+                            if (vm.tagName !== detail.tagName) {
+                                vm.error = null;
+                                vm.tagName = detail.tagName;
+                                vm.viewModelData = detail.viewModel;
+                                vm.typeNamesData = detail.namesByPath;
+                            } else {
+                                if (vm.viewModelData) {
+                                    if (detail.viewModel) {
+                                        Reflect.updateDeep(vm.viewModelData, detail.viewModel);
                                     } else {
-                                        Reflect.setKeyValue(vm, "viewModelData", detail.viewModel);
+                                        Reflect.deleteKeyValue(vm, "viewModelData");
                                     }
+                                } else {
+                                    Reflect.setKeyValue(vm, "viewModelData", detail.viewModel);
                                 }
-                                break;
-                        }
+                            }
+                            break;
                     }
-                );
-
-                timeoutId = setTimeout(getSelectedElementData, 100);
-            }());
+                }
+            });
 
             return function disconnect() {
-                clearTimeout(timeoutId);
+                stopRefreshing();
             };
         }
     }

@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/canjs/devtools.svg?branch=master)](https://travis-ci.org/canjs/devtools)
+
 # devtools
 Chrome DevTools for CanJS.
 

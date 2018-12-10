@@ -182,13 +182,21 @@
             var viewModelData = {};
             var key = "";
             var value = undefined;
+            var toStringed = "";
 
             for (var i=0; i<viewModelKeys.length; i++) {
                 key = viewModelKeys[i];
                 value = canReflect.getKeyValue(viewModel, key);
 
                 if (typeof value === "object") {
-                    viewModelData[key] = canReflect.serialize(value);
+                    // skip built ins (other than arrays, objects, primitives)
+                    // this is primarily for DOM elements
+                    toStringed = Object.prototype.toString.call(value);
+                    if (toStringed !== '[object Object]' && toStringed.indexOf('[object ') !== -1) {
+                        viewModelData[key] = {};
+                    } else {
+                        viewModelData[key] = canReflect.serialize(value);
+                    }
                 } else {
                     viewModelData[key] = value;
                 }
@@ -218,6 +226,12 @@
         },
 
         getViewModelKeys: function(viewModel) {
+            var toStringed = Object.prototype.toString.call(viewModel);
+
+            if (toStringed !== '[object Object]' && toStringed.indexOf('[object ') !== -1) {
+                return [];
+            }
+
             return canReflect.getOwnKeys( viewModel );
         },
 
