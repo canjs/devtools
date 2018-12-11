@@ -305,4 +305,88 @@ describe("canjs-devtools-injected-script", () => {
             "gets no keys for element"
         );
     });
+
+    describe("getComponentTreeData", () => {
+        let el;
+        const fixture = document.getElementById("mocha-fixture");
+
+        beforeEach(() => {
+            // <a-pp>
+            //   <div>
+            //      <a-child>
+            //          <a-deep-child/>
+            //      </a-child>
+            //   </div>
+            //   <a-nother-child>
+            //      <p>
+            //          <a-nother-deep-child/>
+            //      </p>
+            //   </a-nother-child>
+            // </a-pp>
+            Component.extend({
+                tag: "a-deep-child",
+                view: "<p>a deep child</p>",
+                ViewModel: {}
+            });
+
+            Component.extend({
+                tag: "a-child",
+                view: "<a-deep-child/>",
+                ViewModel: {}
+            });
+
+            Component.extend({
+                tag: "a-nother-deep-child",
+                view: "<p>another deep child</p>",
+                ViewModel: {}
+            });
+
+            Component.extend({
+                tag: "a-nother-child",
+                view: "<p><a-nother-deep-child/></p>",
+                ViewModel: {}
+            });
+
+            const App = Component.extend({
+                tag: "a-pp",
+                view: `
+                    <div>
+                        <a-child />
+                    </div>
+                    <a-nother-child/>
+                `,
+                ViewModel: {}
+            });
+
+            const a = new App();
+            el = a.element;
+
+            fixture.appendChild(el);
+        });
+
+        afterEach(() => {
+            fixture.removeChild(el);
+        });
+
+        it("basics", () => {
+            const { detail: { tree } } = devtools.getComponentTreeData();
+
+            assert.deepEqual(tree, [{
+                tagName: "a-pp",
+                children: [{
+                    tagName: "a-child",
+                    children: [{
+                        tagName: "a-deep-child",
+                        children: []
+                    }]
+                }, {
+                    tagName: "a-nother-child",
+                    children: [{
+                        tagName: "a-nother-deep-child",
+                        children: []
+                    }]
+                }]
+            }]);
+        });
+    });
 });
