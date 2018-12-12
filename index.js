@@ -1,3 +1,11 @@
+function initializePanel() {
+    chrome.devtools.panels.create(
+        "CanJS",
+        "images/canjs-16-enabled.png",
+        "panel/index.html"
+    );
+}
+
 function initializeSidebar(name, location, page, height) {
     chrome.devtools.panels[location].createSidebarPane(name, function(sidebar) {
         sidebar.setPage(page);
@@ -13,7 +21,10 @@ function initializeSidebar(name, location, page, height) {
     var frameURLs = Object.keys(registeredFrames);
 
     if (frameURLs.length) {
-        // initialize all the sidebars when devtools loads
+        // initialize the CanJS panel
+        initializePanel();
+
+        // initialize all the sidebars
         initializeSidebar(
             "CanJS ViewModel",
             "elements",
