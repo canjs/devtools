@@ -141,6 +141,20 @@
             }
         },
 
+        getComponentTreeData() {
+            if (!this.registered) {
+                // don't show an error for this because unlike ViewModel and Graph functions,
+                // this can't check if it is the correct frame by using $0.
+                // So just assume it's not the correct frame if register hasn't been called.
+                return this.makeIgnoreResponse(this.NO_CAN_MSG);
+            }
+
+            return this.makeSuccessResponse({
+                type: "componentTree",
+                tree: this.getComponentTreeDataForNode(document.body)
+            });
+        },
+
         /*
          * methods used to build responses
          */
@@ -268,6 +282,38 @@
             }
 
             return tagName;
-        }
+        },
+
+        getComponentTreeDataForNode(el) {
+            var childList = [];
+
+            var treeWalker = document.createTreeWalker(
+                el,
+                NodeFilter.SHOW_ELEMENT,
+                {
+                    acceptNode: function(node) {
+                        return NodeFilter.FILTER_ACCEPT;
+                    }
+                },
+                false
+            );
+
+            var node = treeWalker.firstChild();
+            while(node) {
+                if ("viewModel" in node) {
+                    childList.push({
+                        tagName: node.tagName.toLowerCase(),
+                        children: this.getComponentTreeDataForNode(node)
+                    });
+                } else {
+                    childList = childList.concat(
+                        this.getComponentTreeDataForNode(node)
+                    );
+                }
+                node = treeWalker.nextSibling();
+            }
+
+            return childList;
+        },
     };
 }());
