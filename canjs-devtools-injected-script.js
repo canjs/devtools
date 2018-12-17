@@ -8,10 +8,18 @@
         formatGraph,
         mergeDeep;
 
+    var nextId = 0;
+    var nodeToIdMap = new WeakMap();
+    var nodeToElementMap = new WeakMap();
+    var componentTree = [];
+
     // expose devtools namespace on the window
     window.__CANJS_DEVTOOLS__ = {
         // flag indicating whether register has been called
         registered: false,
+
+        // element selected in CanJS Devtools Panel
+        $0: null,
 
         /*
          * methods called by devtools panels
@@ -149,10 +157,18 @@
                 return this.makeIgnoreResponse(this.NO_CAN_MSG);
             }
 
+            // cache componetTree so it can be used to find nodes by Id
+            componentTree = this.getComponentTreeDataForNode(document.body);
+
             return this.makeSuccessResponse({
                 type: "componentTree",
-                tree: this.getComponentTreeDataForNode(document.body)
+                tree: componentTree
             });
+        },
+
+        selectComponentById(id) {
+            var node = this.getNodeById(id);
+            this.$0 = nodeToElementMap.get(node);
         },
 
         /*
@@ -299,12 +315,18 @@
             );
 
             var node = treeWalker.firstChild();
+            var nodeData;
             while(node) {
                 if ("viewModel" in node) {
-                    childList.push({
+                    nodeData = {
                         tagName: node.tagName.toLowerCase(),
+                        id: this.getNodeId(node),
                         children: this.getComponentTreeDataForNode(node)
-                    });
+                    };
+                    // cache element so it can be retrieved later when
+                    // a component is selected in component tree
+                    nodeToElementMap.set(nodeData, node);
+                    childList.push(nodeData);
                 } else {
                     childList = childList.concat(
                         this.getComponentTreeDataForNode(node)
@@ -315,5 +337,41 @@
 
             return childList;
         },
+
+        getNodeId(node) {
+            var id = nodeToIdMap.get(node);
+
+            if (!id) {
+                id = nextId++;
+                nodeToIdMap.set(node, id);
+            }
+
+            return id;
+        },
+
+        getNodeById(id) {
+            var node;
+
+            for(var i=0; i<componentTree.length; i++) {
+                node = this.checkNodeAndChildren(componentTree[i], id);
+            }
+
+            return node;
+        },
+
+        checkNodeAndChildren(parent, id) {
+            if (parent.id === id) {
+                return parent;
+            }
+
+            var found;
+
+            for(var i=0; i<parent.children.length; i++) {
+                found = this.checkNodeAndChildren(parent.children[i], id);
+                if (found) {
+                    return found;
+                }
+            }
+        }
     };
 }());
