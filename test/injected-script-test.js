@@ -179,6 +179,18 @@ describe("canjs-devtools-injected-script", () => {
             { element: {} },
             "works DefineMaps with elements on them"
         );
+
+        VM = DefineMap.extend("ViewModel", {
+            Thing: {
+                default: () => function Thing() {}
+            }
+        });
+
+        assert.deepEqual(
+            devtools.getSerializedViewModel(new VM()),
+            { },
+            "works DefineMaps with functions on them"
+        );
     });
 
     it("getViewModelNamesByPath", () => {

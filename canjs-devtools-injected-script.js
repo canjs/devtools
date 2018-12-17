@@ -218,6 +218,11 @@
                 key = viewModelKeys[i];
                 value = canReflect.getKeyValue(viewModel, key);
 
+                // don't serialize functions
+                if (typeof value === "function") {
+                    continue;
+                }
+
                 if (typeof value === "object") {
                     // skip built ins (other than arrays, objects, primitives)
                     // this is primarily for DOM elements
