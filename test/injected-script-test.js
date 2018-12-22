@@ -6,6 +6,8 @@ import "../canjs-devtools-injected-script";
 
 const assert = chai.assert;
 
+const isElement = (el) => el.toString() === "[object HTMLElement]";
+
 describe("canjs-devtools-injected-script", () => {
     let devtools, windowCan;
 
@@ -141,7 +143,7 @@ describe("canjs-devtools-injected-script", () => {
 
         assert.deepEqual(
             devtools.getSerializedViewModel(new VM()),
-            { hobbies: [{ name: "singing" }, { name: "dancing" }] },
+            { hobbies: { 0: { name: "singing" }, 1: { name: "dancing" } } },
             "works for DefineMap with nested array"
         );
 
@@ -160,7 +162,7 @@ describe("canjs-devtools-injected-script", () => {
 
         assert.deepEqual(
             devtools.getSerializedViewModel(new VM()),
-            { hobbies: [{ name: "singing" }, { name: "dancing" }] },
+            { hobbies: { 0: { name: "singing" }, 1: { name: "dancing" } } },
             "works for nested DefineMaps"
         );
 
@@ -175,12 +177,42 @@ describe("canjs-devtools-injected-script", () => {
         assert.deepEqual(
             devtools.getSerializedViewModel(new VM()),
             { element: {} },
-            "works DefineMaps with elements on them"
+            "works for DefineMaps with elements on them"
+        );
+
+        VM = DefineMap.extend({
+            elements: {
+                default() {
+                    return new DefineList([
+                        document.createElement("p"),
+                        document.createElement("p")
+                    ]);
+                }
+            }
+        });
+
+        assert.deepEqual(
+            devtools.getSerializedViewModel(new VM()),
+            { elements: { 0: {}, 1: {} } },
+            "works for DefineMaps with a list of elements on them"
+        );
+
+        VM = DefineMap.extend("ViewModel", {
+            Thing: {
+                default: () => function Thing() {}
+            }
+        });
+
+        assert.deepEqual(
+            devtools.getSerializedViewModel(new VM()),
+            { },
+            "works for DefineMaps with functions on them"
         );
     });
 
     it("getViewModelNamesByPath", () => {
         const Thing = DefineMap.extend("AThing", {});
+
         let ViewModel = DefineMap.extend("ViewModel", {
             aThing: { Type: Thing, Default: Thing }
         });
@@ -194,6 +226,7 @@ describe("canjs-devtools-injected-script", () => {
         const ListOfThings = DefineList.extend("ListOfThings", {
             "#": Thing
         });
+
         ViewModel = DefineMap.extend("ViewModel", {
             things: { Type: ListOfThings, default: () => [{}] }
         });
@@ -217,6 +250,7 @@ describe("canjs-devtools-injected-script", () => {
         const ListOfNamedThings = DefineList.extend("ListOfNamedThings", {
             "#": NamedThing
         });
+
         ViewModel = DefineMap.extend("ViewModel", {
             things: { Type: ListOfNamedThings, default: () => [{ name: {} }] }
         });
@@ -304,13 +338,22 @@ describe("canjs-devtools-injected-script", () => {
             [],
             "gets no keys for element"
         );
+
+        const list = new DefineList([ { one: "two" }, { three: "four" } ]);
+        assert.deepEqual(
+            devtools.getViewModelKeys(list),
+            [ "0", "1" ],
+            "ignore _ keys for DefineList"
+        );
     });
 
-    describe("getComponentTreeData", () => {
-        let el;
+    describe("component tree", () => {
+        let el, treeData;
         const fixture = document.getElementById("mocha-fixture");
 
-        beforeEach(() => {
+        // run once before all tests in this describe
+        // so that component IDs do not change between tests
+        before(() => {
             // <a-pp>
             //   <div>
             //      <a-child>
@@ -324,26 +367,26 @@ describe("canjs-devtools-injected-script", () => {
             //   </a-nother-child>
             // </a-pp>
             Component.extend({
-                tag: "a-deep-child",
-                view: "<p>a deep child</p>",
-                ViewModel: {}
-            });
-
-            Component.extend({
                 tag: "a-child",
                 view: "<a-deep-child/>",
                 ViewModel: {}
             });
 
             Component.extend({
-                tag: "a-nother-deep-child",
-                view: "<p>another deep child</p>",
+                tag: "a-deep-child",
+                view: "<p>a deep child</p>",
                 ViewModel: {}
             });
 
             Component.extend({
                 tag: "a-nother-child",
                 view: "<p><a-nother-deep-child/></p>",
+                ViewModel: {}
+            });
+
+            Component.extend({
+                tag: "a-nother-deep-child",
+                view: "<p>another deep child</p>",
                 ViewModel: {}
             });
 
@@ -362,31 +405,59 @@ describe("canjs-devtools-injected-script", () => {
             el = a.element;
 
             fixture.appendChild(el);
+
+            const resp = devtools.getComponentTreeData();
+            treeData = resp.detail.tree;
         });
 
-        afterEach(() => {
+        after(() => {
             fixture.removeChild(el);
         });
 
-        it("basics", () => {
-            const { detail: { tree } } = devtools.getComponentTreeData();
-
-            assert.deepEqual(tree, [{
+        it("getComponentTreeData", () => {
+            assert.deepEqual(treeData, [{
                 tagName: "a-pp",
+                id: 0,
                 children: [{
                     tagName: "a-child",
+                    id: 1,
                     children: [{
                         tagName: "a-deep-child",
+                        id: 2,
                         children: []
                     }]
                 }, {
                     tagName: "a-nother-child",
+                    id: 3,
                     children: [{
                         tagName: "a-nother-deep-child",
+                        id: 4,
                         children: []
                     }]
                 }]
             }]);
+        });
+
+        it("selectComponentById", () => {
+            devtools.selectComponentById(0);
+            assert.ok(isElement(devtools.$0), "App");
+            assert.equal(devtools.$0.tagName.toLowerCase(), "a-pp", "a-pp");
+
+            devtools.selectComponentById(1);
+            assert.ok(isElement(devtools.$0), "Child");
+            assert.equal(devtools.$0.tagName.toLowerCase(), "a-child", "a-child");
+
+            devtools.selectComponentById(2);
+            assert.ok(isElement(devtools.$0), "DeepChild");
+            assert.equal(devtools.$0.tagName.toLowerCase(), "a-deep-child", "a-deep-child");
+
+            devtools.selectComponentById(3);
+            assert.ok(isElement(devtools.$0), "AnotherChild");
+            assert.equal(devtools.$0.tagName.toLowerCase(), "a-nother-child", "a-nother-child");
+
+            devtools.selectComponentById(4);
+            assert.ok(isElement(devtools.$0), "AnotherDeepChild");
+            assert.equal(devtools.$0.tagName.toLowerCase(), "a-nother-deep-child", "a-nother-deep-child");
         });
     });
 });
