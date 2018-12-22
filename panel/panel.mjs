@@ -10,8 +10,8 @@ Component.extend({
             <components-panel
                 componentTree:to="componentTree"
                 selectedNode:to="selectedNode"
-                viewModelData:to="viewModelData"
-                typeNamesData:to="typeNamesData"
+                viewModelData:bind="viewModelData"
+                typeNamesData:bind="typeNamesData"
                 updateValues:from="updateValues"
             ></components-panel>
         {{/ if }}
@@ -24,8 +24,8 @@ Component.extend({
 
             const resetViewModelData = () => {
                 vm.error = undefined;
-                Reflect.update(vm.viewModelData, {});
-                Reflect.update(vm.typeNamesData, {});
+                vm.viewModelData = {};
+                vm.typeNamesData = {};
             };
 
             vm.listenTo("selectedNode", (ev, node) => {
