@@ -143,7 +143,7 @@ describe("canjs-devtools-injected-script", () => {
 
         assert.deepEqual(
             devtools.getSerializedViewModel(new VM()),
-            { hobbies: [{ name: "singing" }, { name: "dancing" }] },
+            { hobbies: { 0: { name: "singing" }, 1: { name: "dancing" } } },
             "works for DefineMap with nested array"
         );
 
@@ -162,7 +162,7 @@ describe("canjs-devtools-injected-script", () => {
 
         assert.deepEqual(
             devtools.getSerializedViewModel(new VM()),
-            { hobbies: [{ name: "singing" }, { name: "dancing" }] },
+            { hobbies: { 0: { name: "singing" }, 1: { name: "dancing" } } },
             "works for nested DefineMaps"
         );
 
@@ -177,7 +177,24 @@ describe("canjs-devtools-injected-script", () => {
         assert.deepEqual(
             devtools.getSerializedViewModel(new VM()),
             { element: {} },
-            "works DefineMaps with elements on them"
+            "works for DefineMaps with elements on them"
+        );
+
+        VM = DefineMap.extend({
+            elements: {
+                default() {
+                    return new DefineList([
+                        document.createElement("p"),
+                        document.createElement("p")
+                    ]);
+                }
+            }
+        });
+
+        assert.deepEqual(
+            devtools.getSerializedViewModel(new VM()),
+            { elements: { 0: {}, 1: {} } },
+            "works for DefineMaps with a list of elements on them"
         );
 
         VM = DefineMap.extend("ViewModel", {
@@ -189,7 +206,7 @@ describe("canjs-devtools-injected-script", () => {
         assert.deepEqual(
             devtools.getSerializedViewModel(new VM()),
             { },
-            "works DefineMaps with functions on them"
+            "works for DefineMaps with functions on them"
         );
     });
 
@@ -320,6 +337,13 @@ describe("canjs-devtools-injected-script", () => {
             devtools.getViewModelKeys(el),
             [],
             "gets no keys for element"
+        );
+
+        const list = new DefineList([ { one: "two" }, { three: "four" } ]);
+        assert.deepEqual(
+            devtools.getViewModelKeys(list),
+            [ "0", "1" ],
+            "ignore _ keys for DefineList"
         );
     });
 

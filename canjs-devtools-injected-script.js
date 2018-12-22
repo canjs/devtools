@@ -230,7 +230,7 @@
                     if (toStringed !== '[object Object]' && toStringed.indexOf('[object ') !== -1) {
                         viewModelData[key] = {};
                     } else {
-                        viewModelData[key] = canReflect.serialize(value);
+                        viewModelData[key] = this.getSerializedViewModel(value);
                     }
                 } else {
                     viewModelData[key] = value;
@@ -267,7 +267,13 @@
                 return [];
             }
 
-            return canReflect.getOwnKeys( viewModel );
+            if (canReflect.isListLike(viewModel)) {
+                return canReflect.getOwnEnumerableKeys( viewModel )
+            }
+
+            if (canReflect.isMapLike(viewModel)) {
+                return canReflect.getOwnKeys( viewModel )
+            }
         },
 
         getElementKeys: function(el) {
