@@ -212,7 +212,6 @@
             var viewModelData = {};
             var key = "";
             var value = undefined;
-            var toStringed = "";
 
             var path = "";
             var options = options || {};
@@ -281,12 +280,6 @@
         },
 
         getViewModelKeys: function(viewModel) {
-            var toStringed = Object.prototype.toString.call(viewModel);
-
-            if (toStringed !== '[object Object]' && toStringed.indexOf('[object ') !== -1) {
-                return [];
-            }
-
             if (canReflect.isListLike(viewModel)) {
                 return canReflect.getOwnEnumerableKeys( viewModel )
             }

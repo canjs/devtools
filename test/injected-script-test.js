@@ -436,18 +436,11 @@ describe("canjs-devtools-injected-script", () => {
 
         const c = new C();
         const vm = c.viewModel;
-        const el = c.element;
 
         assert.deepEqual(
             devtools.getViewModelKeys(vm),
             [ "first", "last", "name" ],
             "gets viewmodel keys"
-        );
-
-        assert.deepEqual(
-            devtools.getViewModelKeys(el),
-            [],
-            "gets no keys for element"
         );
 
         const list = new DefineList([ { one: "two" }, { three: "four" } ]);
