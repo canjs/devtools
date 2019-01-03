@@ -13,6 +13,7 @@ Component.extend({
                 viewModelData:bind="viewModelData"
                 typeNamesData:bind="typeNamesData"
                 updateValues:from="updateValues"
+                expandedKeys:to="expandedKeys"
             ></components-panel>
         {{/ if }}
     `,
@@ -40,7 +41,11 @@ Component.extend({
                 resetViewModelData();
 
                 stopRefreshingViewModelData = window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
-                    fnString: "getViewModelData(__CANJS_DEVTOOLS__.$0)",
+                    fn: () => {
+                        return "getViewModelData(__CANJS_DEVTOOLS__.$0, { expandedKeys: [ '" +
+                                    this.expandedKeys.serialize().join("', '") +
+                                "' ] } )";
+                    },
                     refreshInterval: 2000,
                     success: function(result) {
                         var status = result.status;
@@ -92,6 +97,7 @@ Component.extend({
         error: "string",
         viewModelData: DefineMap,
         typeNamesData: DefineMap,
+        expandedKeys: DefineList,
 
         updateValues: function(data) {
             window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({

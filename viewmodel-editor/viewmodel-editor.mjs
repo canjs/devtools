@@ -12,6 +12,7 @@ Component.extend({
                 viewModelData:from="viewModelData"
                 typeNamesData:from="typeNamesData"
                 updateValues:from="updateValues"
+                expandedKeys:to="expandedKeys"
             ></viewmodel-editor>
         {{/if}}
     `,
@@ -20,6 +21,7 @@ Component.extend({
         tagName: "string",
         viewModelData: "observable",
         typeNamesData: "observable",
+        expandedKeys: "observable",
         error: "string",
 
         updateValues: function(data) {
