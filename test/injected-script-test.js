@@ -398,6 +398,12 @@ describe("canjs-devtools-injected-script", () => {
                 last: { type: "string", default: "McCallister" },
                 get name() {
                     return this.first + " " + this.last;
+                },
+                hobbies: {
+                    type: "any",
+                    default() {
+                        return [ "running", "jumping" ];
+                    }
                 }
             }
         });
@@ -407,17 +413,40 @@ describe("canjs-devtools-injected-script", () => {
         const el = c.element;
 
         assert.deepEqual(
-            devtools.getSerializedViewModel(vm),
-            { first: "Kevin", last: "McCallister", name: "Kevin McCallister" },
+            devtools.getSerializedViewModel(vm, "", { expandedKeys: [ "hobbies" ] }),
+            { first: "Kevin", last: "McCallister", name: "Kevin McCallister", hobbies: { 0: "running", 1: "jumping" } },
             "default viewmodel data"
         );
 
-        devtools.updateViewModel(el, { first: "Marty", last: "McFly" });
+        devtools.updateViewModel(el, [
+            { type: "set", key: "first", value: "Marty" },
+            { type: "set", key: "last", value: "McFly" }
+        ]);
 
         assert.deepEqual(
-            devtools.getSerializedViewModel(vm),
-            { first: "Marty", last: "McFly", name: "Marty McFly" },
-            "updated viewmodel data"
+            devtools.getSerializedViewModel(vm, "", { expandedKeys: [ "hobbies" ] }),
+            { first: "Marty", last: "McFly", name: "Marty McFly", hobbies: { 0: "running", 1: "jumping" } },
+            "set works"
+        );
+
+        devtools.updateViewModel(el, [
+            { type: "delete", key: "last" }
+        ]);
+
+        assert.deepEqual(
+            devtools.getSerializedViewModel(vm, "", { expandedKeys: [ "hobbies" ] }),
+            { first: "Marty", last: undefined, name: "Marty undefined", hobbies: { 0: "running", 1: "jumping" } },
+            "delete works"
+        );
+
+        devtools.updateViewModel(el, [
+            { type: "splice", key: "hobbies", index: 0, deleteCount: 1, insert: [ "skipping" ] }
+        ]);
+
+        assert.deepEqual(
+            devtools.getSerializedViewModel(vm, "", { expandedKeys: [ "hobbies" ] }),
+            { first: "Marty", last: undefined, name: "Marty undefined", hobbies: { 0: "skipping", 1: "jumping" } },
+            "splice works"
         );
     });
 

@@ -13,6 +13,26 @@
     var nodeToElementMap = new WeakMap();
     var componentTree = [];
 
+    var getObjAtKey = function(obj, key) {
+        if (!key) {
+            return obj;
+        }
+
+        var parts = key.split(".");
+
+        return parts.reduce((parent, key) => {
+            return canReflect.getKeyValue(parent, key);
+        }, obj);
+    };
+
+    var getLastParent = function(obj, key) {
+        return getObjAtKey(obj, key.split(".").slice(0, -1).join("."));
+    };
+
+    var getLastKey = function(path) {
+        return path.split(".").pop();
+    };
+
     // expose devtools namespace on the window
     window.__CANJS_DEVTOOLS__ = {
         // flag indicating whether register has been called
@@ -68,7 +88,7 @@
             });
         },
 
-        updateViewModel: function(el, data) {
+        updateViewModel: function(el, patches) {
             // if $0 is not in this frame, el will be null
             if (!el) {
                 return this.makeIgnoreResponse("$0 is not in this frame");
@@ -80,12 +100,30 @@
             }
 
             var elementWithViewModel = this.getNearestElementWithViewModel(el);
+            var viewModel, parentObj, lastKey;
 
             if (elementWithViewModel) {
-                canReflect.assignDeep(
-                    elementWithViewModel[viewModelSymbol],
-                    data
-                );
+                viewModel = elementWithViewModel[viewModelSymbol];
+
+                patches.forEach(({ type, key, value, index, deleteCount, insert }) => {
+                    switch(type) {
+                        case "add":
+                        case "set":
+                            parentObj = getLastParent(viewModel, key);
+                            lastKey = getLastKey(key);
+                            canReflect.setKeyValue(parentObj, lastKey, value);
+                            break;
+                        case "delete":
+                            parentObj = getLastParent(viewModel, key);
+                            lastKey = getLastKey(key);
+                            canReflect.deleteKeyValue(parentObj, lastKey);
+                            break;
+                        case "splice":
+                            parentObj = getObjAtKey(viewModel, key);
+                            parentObj.splice(index, deleteCount, ...insert);
+                            break;
+                    }
+                });
             }
         },
 
