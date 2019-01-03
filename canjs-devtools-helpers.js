@@ -20,7 +20,7 @@ window.CANJS_DEVTOOLS_HELPERS = {
             };
 
             chrome.devtools.inspectedWindow.eval(
-                "typeof __CANJS_DEVTOOLS__ === 'object' && __CANJS_DEVTOOLS__." + options.fnString,
+                `typeof __CANJS_DEVTOOLS__ === 'object' && __CANJS_DEVTOOLS__.${options.fn ? options.fn() : options.fnString}`,
                 { frameURL: url },
                 function(result, exception) {
                     if (exception) {
