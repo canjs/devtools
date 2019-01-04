@@ -481,12 +481,24 @@ describe("canjs-devtools-injected-script", () => {
     });
 
     describe("component tree", () => {
-        let el, treeData;
+        let appOne, appTwo, treeData;
         const fixture = document.getElementById("mocha-fixture");
 
         // run once before all tests in this describe
         // so that component IDs do not change between tests
         before(() => {
+            // <a-pp>
+            //   <div>
+            //      <a-child>
+            //          <a-deep-child/>
+            //      </a-child>
+            //   </div>
+            //   <a-nother-child>
+            //      <p>
+            //          <a-nother-deep-child/>
+            //      </p>
+            //   </a-nother-child>
+            // </a-pp>
             // <a-pp>
             //   <div>
             //      <a-child>
@@ -535,16 +547,21 @@ describe("canjs-devtools-injected-script", () => {
             });
 
             const a = new App();
-            el = a.element;
+            appOne = a.element;
 
-            fixture.appendChild(el);
+            const b = new App();
+            appTwo = b.element;
+
+            fixture.appendChild(appOne);
+            fixture.appendChild(appTwo);
 
             const resp = devtools.getComponentTreeData();
             treeData = resp.detail.tree;
         });
 
         after(() => {
-            fixture.removeChild(el);
+            fixture.removeChild(appOne);
+            fixture.removeChild(appTwo);
         });
 
         it("getComponentTreeData", () => {
@@ -565,6 +582,26 @@ describe("canjs-devtools-injected-script", () => {
                     children: [{
                         tagName: "a-nother-deep-child",
                         id: 4,
+                        children: []
+                    }]
+                }]
+            }, {
+                tagName: "a-pp",
+                id: 5,
+                children: [{
+                    tagName: "a-child",
+                    id: 6,
+                    children: [{
+                        tagName: "a-deep-child",
+                        id: 7,
+                        children: []
+                    }]
+                }, {
+                    tagName: "a-nother-child",
+                    id: 8,
+                    children: [{
+                        tagName: "a-nother-deep-child",
+                        id: 9,
                         children: []
                     }]
                 }]
@@ -591,6 +628,26 @@ describe("canjs-devtools-injected-script", () => {
             devtools.selectComponentById(4);
             assert.ok(isElement(devtools.$0), "AnotherDeepChild");
             assert.equal(devtools.$0.tagName.toLowerCase(), "a-nother-deep-child", "a-nother-deep-child");
+
+            devtools.selectComponentById(5);
+            assert.ok(isElement(devtools.$0), "App");
+            assert.equal(devtools.$0.tagName.toLowerCase(), "a-pp", "second a-pp");
+
+            devtools.selectComponentById(6);
+            assert.ok(isElement(devtools.$0), "Child");
+            assert.equal(devtools.$0.tagName.toLowerCase(), "a-child", "second a-child");
+
+            devtools.selectComponentById(7);
+            assert.ok(isElement(devtools.$0), "DeepChild");
+            assert.equal(devtools.$0.tagName.toLowerCase(), "a-deep-child", "second a-deep-child");
+
+            devtools.selectComponentById(8);
+            assert.ok(isElement(devtools.$0), "AnotherChild");
+            assert.equal(devtools.$0.tagName.toLowerCase(), "a-nother-child", "second a-nother-child");
+
+            devtools.selectComponentById(9);
+            assert.ok(isElement(devtools.$0), "AnotherDeepChild");
+            assert.equal(devtools.$0.tagName.toLowerCase(), "a-nother-deep-child", "second a-nother-deep-child");
         });
     });
 });

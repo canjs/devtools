@@ -416,9 +416,10 @@
 
             for(var i=0; i<componentTree.length; i++) {
                 node = this.checkNodeAndChildren(componentTree[i], id);
+                if (node) {
+                    return node;
+                }
             }
-
-            return node;
         },
 
         checkNodeAndChildren(parent, id) {

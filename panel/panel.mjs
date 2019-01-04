@@ -46,7 +46,7 @@ Component.extend({
                                     this.expandedKeys.serialize().join("', '") +
                                 "' ] } )";
                     },
-                    refreshInterval: 2000,
+                    refreshInterval: 100,
                     success: function(result) {
                         var status = result.status;
                         var detail = result.detail;
@@ -92,8 +92,11 @@ Component.extend({
             };
         },
 
+        // Component Tree data
         componentTree: DefineList,
         selectedNode: DefineMap,
+
+        // ViewModel Editor data
         error: "string",
         viewModelData: DefineMap,
         typeNamesData: DefineMap,
