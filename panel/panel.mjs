@@ -92,8 +92,11 @@ Component.extend({
             };
         },
 
+        // Component Tree data
         componentTree: DefineList,
         selectedNode: DefineMap,
+
+        // ViewModel Editor data
         error: "string",
         viewModelData: DefineMap,
         typeNamesData: DefineMap,

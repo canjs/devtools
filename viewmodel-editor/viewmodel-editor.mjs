@@ -1,4 +1,4 @@
-import { Component, Reflect } from "../node_modules/can-devtools-components/dist/viewmodel-editor.mjs";
+import { Component, DefineMap, DefineList, Reflect } from "../node_modules/can-devtools-components/dist/viewmodel-editor.mjs";
 
 Component.extend({
     tag: "canjs-devtools-viewmodel-editor",
@@ -19,10 +19,10 @@ Component.extend({
 
     ViewModel: {
         tagName: "string",
-        viewModelData: "observable",
-        typeNamesData: "observable",
-        expandedKeys: "observable",
         error: "string",
+        viewModelData: DefineMap,
+        typeNamesData: DefineMap,
+        expandedKeys: DefineList,
 
         updateValues: function(data) {
             window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
@@ -34,7 +34,11 @@ Component.extend({
             var vm = this;
 
             var stopRefreshing = window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
-                fnString: "getViewModelData($0)",
+                fn: () => {
+                    return "getViewModelData($0, { expandedKeys: [ '" +
+                                (vm.expandedKeys ? vm.expandedKeys.serialize().join("', '") : "")+
+                            "' ] } )";
+                },
                 refreshInterval: 100,
                 success: function(result) {
                     var status = result.status;
