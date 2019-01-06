@@ -78,13 +78,14 @@
                 return this.makeIgnoreResponse("&lt;" + el.tagName.toLowerCase() + "&gt; does not have a viewModel");
             }
 
-            const viewModel = elementWithViewModel[viewModelSymbol];
+            const vm = elementWithViewModel[viewModelSymbol];
+            const { viewModel, namesByPath } = this.getSerializedViewModelData(vm, options);
 
             return this.makeSuccessResponse({
                 type: "viewModel",
                 tagName: this.getUniqueTagName(elementWithViewModel),
-                viewModel: this.getSerializedViewModel(viewModel, "", options),
-                namesByPath: this.getViewModelNamesByPath(viewModel, "", options)
+                viewModel,
+                namesByPath
             });
         },
 
@@ -100,10 +101,10 @@
             }
 
             const elementWithViewModel = this.getNearestElementWithViewModel(el);
-            let viewModel, parentObj, lastKey;
 
             if (elementWithViewModel) {
-                viewModel = elementWithViewModel[viewModelSymbol];
+                const viewModel = elementWithViewModel[viewModelSymbol];
+                let parentObj, lastKey;
 
                 patches.forEach(({ type, key, value, index, deleteCount, insert }) => {
                     switch(type) {
@@ -245,11 +246,10 @@
                         undefined;
         },
 
-        getSerializedViewModel(viewModel, parentPath, options) {
+        getSerializedViewModelData(viewModel, { expandedKeys = [] } = {}, parentPath = "") {
             const viewModelKeys = this.getViewModelKeys(viewModel);
             const viewModelData = {};
-            options = options || {};
-            const expandedKeys = options.expandedKeys || [];
+            const namesByPath = { };
 
             for (let i=0; i<viewModelKeys.length; i++) {
                 let key = viewModelKeys[i];
@@ -269,45 +269,27 @@
 
                 if (typeof value === "object") {
                     viewModelData[key] = {};
+                    namesByPath[path] = canReflect.getName(value);
 
                     // get serialized data for children of expanded keys
                     if (expandedKeys.indexOf(path) !== -1) {
-                        viewModelData[key] = this.getSerializedViewModel(
-                            value,
-                            path,
-                            options
-                        );
+                        let {
+                            viewModel: childViewModel,
+                            namesByPath: childNamesByPath
+                        } = this.getSerializedViewModelData(value, { expandedKeys }, path );
+
+                        viewModelData[key] = childViewModel;
+                        Object.assign(namesByPath, childNamesByPath);
                     }
                 } else {
                     viewModelData[key] = value;
                 }
             }
 
-            return viewModelData;
-        },
-
-        getViewModelNamesByPath(viewModel, parentPath, options) {
-            const viewModelKeys = this.getViewModelKeys(viewModel);
-            const namesByPath = { };
-            const serializationOptions = options || {};
-            const expandedKeys = serializationOptions.expandedKeys || [];
-
-            for (let i=0; i<viewModelKeys.length; i++) {
-                let key = viewModelKeys[i];
-                let value = canReflect.getKeyValue(viewModel, key);
-                let path = `${parentPath ? parentPath + "." : ""}${key}`;
-
-                if (value && typeof value === "object") {
-                    namesByPath[path] = canReflect.getName(value);
-
-                    // get names of children of expanded paths
-                    if (expandedKeys.indexOf(path) > -1) {
-                        Object.assign(namesByPath, this.getViewModelNamesByPath(value, path, options));
-                    }
-                }
-            }
-
-            return namesByPath;
+            return {
+                viewModel: viewModelData,
+                namesByPath: namesByPath
+            };
         },
 
         getViewModelKeys(viewModel) {
