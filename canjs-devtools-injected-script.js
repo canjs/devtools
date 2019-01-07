@@ -79,13 +79,14 @@
             }
 
             const vm = elementWithViewModel[viewModelSymbol];
-            const { viewModel, namesByPath } = this.getSerializedViewModelData(vm, options);
+            const { viewModel, namesByPath, messages } = this.getSerializedViewModelData(vm, options);
 
             return this.makeSuccessResponse({
                 type: "viewModel",
                 tagName: this.getUniqueTagName(elementWithViewModel),
                 viewModel,
-                namesByPath
+                namesByPath,
+                messages
             });
         },
 
@@ -249,7 +250,8 @@
         getSerializedViewModelData(viewModel, { expandedKeys = [] } = {}, parentPath = "") {
             const viewModelKeys = this.getViewModelKeys(viewModel);
             const viewModelData = {};
-            const namesByPath = { };
+            const namesByPath = {};
+            const messages = {};
 
             for (let i=0; i<viewModelKeys.length; i++) {
                 let key = viewModelKeys[i];
@@ -258,8 +260,14 @@
                 try {
                     value = canReflect.getKeyValue(viewModel, key);
                 } catch(e) {
-                    // handle non-serializable values (such as recursive structures)
+                    // handle non-serializable values (such as recursive and circular structures)
                     value = {};
+
+                    // add error message for key
+                    messages[path] = {
+                        type: "error",
+                        message: 'Error getting value of "' + path + '": ' + e.message
+                    };
                 }
 
                 // don't serialize functions
@@ -288,7 +296,8 @@
 
             return {
                 viewModel: viewModelData,
-                namesByPath: namesByPath
+                namesByPath,
+                messages
             };
         },
 

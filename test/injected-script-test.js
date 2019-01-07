@@ -186,7 +186,8 @@ describe("canjs-devtools-injected-script", () => {
 
         const {
             viewModel,
-            namesByPath
+            namesByPath,
+            messages
         } = devtools.getViewModelData(el).detail;
 
         assert.deepEqual(
@@ -198,8 +199,13 @@ describe("canjs-devtools-injected-script", () => {
         assert.deepEqual(
             namesByPath,
             { circular: "Object{}" },
-            "gets no names"
+            "gets correct name for circular property"
         );
+
+        assert.equal(typeof messages, "object");
+        assert.equal(typeof messages.circular, "object");
+        assert.equal(messages.circular.type, "error");
+        assert.ok(messages.circular.message.match(/Error getting value of "circular":/))
     });
 
     it("getViewModelData can handle ViewModels with infinite recursion (#46)", () => {
