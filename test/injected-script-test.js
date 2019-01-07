@@ -84,6 +84,89 @@ describe("canjs-devtools-injected-script", () => {
         );
     });
 
+    it("getViewModelData can handle ViewModels with elements on them", () => {
+        const C = Component.extend({
+            tag: "app-with-element",
+            view: "<p>this app has an element on its viewModel</p>",
+            ViewModel: {
+                element: {
+                    default() {
+                        return document.createElement("p");
+                    }
+                }
+            }
+        });
+
+        const c = new C();
+        const el = c.element;
+
+        const {
+            viewModel
+        } = devtools.getViewModelData(el).detail;
+
+        assert.deepEqual(
+            viewModel,
+            { element: {} },
+            "works for DefineMaps with elements on them"
+        );
+    });
+
+    it("getViewModelData can handle ViewModels with lists of elements on them", () => {
+        const C = Component.extend({
+            tag: "app-with-list-of-elements",
+            view: "<p>this app has a list of elements on its viewModel</p>",
+            ViewModel: {
+                elements: {
+                    default() {
+                        return new DefineList([
+                            document.createElement("p"),
+                            document.createElement("p")
+                        ]);
+                    }
+                }
+            }
+        });
+
+        const c = new C();
+        const el = c.element;
+
+        const {
+            viewModel
+        } = devtools.getViewModelData(el).detail;
+
+        assert.deepEqual(
+            viewModel,
+            { elements: { } },
+            "works for DefineMaps with a list of elements on them"
+        );
+    });
+
+    it("getViewModelData can handle ViewModels with functions on them", () => {
+        const C = Component.extend({
+            tag: "app-with-functions",
+            view: "<p>this app uses functions</p>",
+            ViewModel: {
+                Thing: {
+                    default: () => function Thing() {}
+                }
+            }
+        });
+
+        const c = new C();
+        const el = c.element;
+
+        const {
+            viewModel
+        } = devtools.getViewModelData(el).detail;
+
+
+        assert.deepEqual(
+            viewModel,
+            { },
+            "works for DefineMaps with functions on them"
+        );
+    });
+
     it("getViewModelData can handle ViewModels with circular references (#46)", () => {
         const circular = {};
         circular.circular = circular;
@@ -103,8 +186,6 @@ describe("canjs-devtools-injected-script", () => {
 
         const {
             viewModel,
-            tagName,
-            type,
             namesByPath
         } = devtools.getViewModelData(el).detail;
 
@@ -266,50 +347,6 @@ describe("canjs-devtools-injected-script", () => {
             { hobbies: { 0: { name: "singing" }, 1: { name: "dancing" } } },
             "works for nested DefineMaps - everything expanded"
         );
-
-        VM = DefineMap.extend({
-            element: {
-                default() {
-                    return document.createElement("p");
-                }
-            }
-        });
-
-        assert.deepEqual(
-            devtools.getSerializedViewModelData(new VM()).viewModel,
-            { element: {} },
-            "works for DefineMaps with elements on them"
-        );
-
-        VM = DefineMap.extend({
-            elements: {
-                default() {
-                    return new DefineList([
-                        document.createElement("p"),
-                        document.createElement("p")
-                    ]);
-                }
-            }
-        });
-
-        assert.deepEqual(
-            devtools.getSerializedViewModelData(new VM()).viewModel,
-            { elements: { } },
-            "works for DefineMaps with a list of elements on them"
-        );
-
-        VM = DefineMap.extend("ViewModel", {
-            Thing: {
-                default: () => function Thing() {}
-            }
-        });
-
-        assert.deepEqual(
-            devtools.getSerializedViewModelData(new VM()).viewModel,
-            { },
-            "works for DefineMaps with functions on them"
-        );
-
         var PersonName = DefineMap.extend("Name", {
           first: { type: "string", default: "kevin" },
           last: { type: "string", default: "phillips" }
