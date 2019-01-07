@@ -279,15 +279,26 @@
                     viewModelData[key] = {};
                     namesByPath[path] = canReflect.getName(value);
 
+                    let toStringed = Object.prototype.toString.call(value);
+
+                    if (toStringed !== "[object Object]" && toStringed.indexOf("[object ") !== -1) {
+                        messages[path] = {
+                            type: "info",
+                            message: "CanJS Devtools does not expand HTML Elements"
+                        };
+                    }
+
                     // get serialized data for children of expanded keys
                     if (expandedKeys.indexOf(path) !== -1) {
                         let {
                             viewModel: childViewModel,
-                            namesByPath: childNamesByPath
+                            namesByPath: childNamesByPath,
+                            messages: childMessages
                         } = this.getSerializedViewModelData(value, { expandedKeys }, path );
 
                         viewModelData[key] = childViewModel;
                         Object.assign(namesByPath, childNamesByPath);
+                        Object.assign(messages, childMessages);
                     }
                 } else {
                     viewModelData[key] = value;

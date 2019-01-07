@@ -101,13 +101,27 @@ describe("canjs-devtools-injected-script", () => {
         const el = c.element;
 
         const {
-            viewModel
+            viewModel,
+            namesByPath,
+            messages
         } = devtools.getViewModelData(el).detail;
 
         assert.deepEqual(
             viewModel,
             { element: {} },
-            "works for DefineMaps with elements on them"
+            "gets correct viewModel data"
+        );
+
+        assert.deepEqual(
+            namesByPath,
+            { element: "HTMLParagraphElement{}" },
+            "gets correct name data"
+        );
+
+        assert.deepEqual(
+            messages,
+            { element: { type: "info", message: "CanJS Devtools does not expand HTML Elements" } },
+            "gets correct message data"
         );
     });
 
@@ -131,13 +145,58 @@ describe("canjs-devtools-injected-script", () => {
         const el = c.element;
 
         const {
-            viewModel
+            viewModel,
+            namesByPath,
+            messages
         } = devtools.getViewModelData(el).detail;
 
         assert.deepEqual(
             viewModel,
             { elements: { } },
-            "works for DefineMaps with a list of elements on them"
+            "gets correct viewModel data - unexpanded"
+        );
+
+        assert.deepEqual(
+            namesByPath,
+            { elements: "DefineList[]" },
+            "gets correct name data - unexpanded"
+        );
+
+        assert.deepEqual(
+            messages,
+            {},
+            "gets correct message data - unexpanded"
+        );
+
+        const {
+            viewModel: viewModelListExpanded,
+            namesByPath: namesByPathListExpanded,
+            messages: messagesListExpanded
+        } = devtools.getViewModelData(el, { expandedKeys: [ "elements" ] }).detail;
+
+        assert.deepEqual(
+            viewModelListExpanded,
+            { elements: { 0: { }, 1: { } } },
+            "gets correct viewModel data - list expanded"
+        );
+
+        assert.deepEqual(
+            namesByPathListExpanded,
+            {
+                elements: "DefineList[]",
+                "elements.0": "HTMLParagraphElement{}",
+                "elements.1": "HTMLParagraphElement{}"
+            },
+            "gets correct name data - list expanded"
+        );
+
+        assert.deepEqual(
+            messagesListExpanded,
+            {
+                "elements.0": { type: "info", message: "CanJS Devtools does not expand HTML Elements" },
+                "elements.1": { type: "info", message: "CanJS Devtools does not expand HTML Elements" },
+            },
+            "gets correct message data - list expanded"
         );
     });
 
