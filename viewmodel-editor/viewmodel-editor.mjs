@@ -11,6 +11,7 @@ Component.extend({
                 tagName:from="tagName"
                 viewModelData:from="viewModelData"
                 typeNamesData:from="typeNamesData"
+                messages:from="messages"
                 updateValues:from="updateValues"
                 expandedKeys:to="expandedKeys"
             ></viewmodel-editor>
@@ -22,6 +23,7 @@ Component.extend({
         error: "string",
         viewModelData: DefineMap,
         typeNamesData: DefineMap,
+        messages: DefineMap,
         expandedKeys: DefineList,
 
         updateValues: function(data) {
@@ -57,12 +59,17 @@ Component.extend({
                                 vm.tagName = detail.tagName;
                                 vm.viewModelData = detail.viewModel;
                                 vm.typeNamesData = detail.namesByPath;
+                                vm.messages = detail.messages;
                             } else {
                                 if (vm.viewModelData) {
                                     if (detail.viewModel) {
                                         Reflect.updateDeep(vm.viewModelData, detail.viewModel);
+                                        vm.typeNamesData = detail.namesByPath;
+                                        vm.messages = detail.messages;
                                     } else {
                                         Reflect.deleteKeyValue(vm, "viewModelData");
+                                        Reflect.deleteKeyValue(vm, "typeNamesData");
+                                        Reflect.deleteKeyValue(vm, "messages");
                                     }
                                 } else {
                                     Reflect.setKeyValue(vm, "viewModelData", detail.viewModel);
