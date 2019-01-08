@@ -27,284 +27,393 @@ describe("canjs-devtools-injected-script", () => {
         window.can = windowCan;
     });
 
-    it("getViewModelData", () => {
-        const C = Component.extend({
-            tag: "a-pp",
-            view: "<p>{{name}}</p>",
-            ViewModel: {
-                first: { type: "string", default: "Kevin" },
-                last: { type: "string", default: "McCallister" },
-                get name() {
-                    return this.first + " " + this.last;
-                }
-            }
-        });
-
-        const c = new C();
-        const el = c.element;
-
-        const {
-            viewModel: viewModelFromEl,
-            tagName: tagNameFromEl,
-            type: typeFromEl,
-            namesByPath: namesByPathFromEl
-        } = devtools.getViewModelData(el).detail;
-
-        assert.equal(typeFromEl, "viewModel", "type from el");
-        assert.equal(tagNameFromEl, "<a-pp>", "tagName from el");
-        assert.deepEqual(
-            viewModelFromEl,
-            { first: "Kevin", last: "McCallister", name: "Kevin McCallister" },
-            "viewModel from el"
-        );
-        assert.deepEqual(
-            namesByPathFromEl,
-            {},
-            "namesByPath from el"
-        );
-
-        const {
-            viewModel: viewModelFromChild,
-            tagName: tagNameFromChild,
-            type: typeFromChild,
-            namesByPath: namesByPathFromChild
-        } = devtools.getViewModelData(el.querySelector("p")).detail;
-
-        assert.equal(typeFromChild, "viewModel", "type from child of el");
-        assert.equal(tagNameFromChild, "<a-pp>", "tagName from child of el");
-        assert.deepEqual(
-            viewModelFromChild,
-            { first: "Kevin", last: "McCallister", name: "Kevin McCallister" },
-            "viewModel from child of el"
-        );
-        assert.deepEqual(
-            namesByPathFromChild,
-            {},
-            "namesByPath from child of el"
-        );
-    });
-
-    it("getViewModelData can handle ViewModels with elements on them", () => {
-        const C = Component.extend({
-            tag: "app-with-element",
-            view: "<p>this app has an element on its viewModel</p>",
-            ViewModel: {
-                element: {
-                    default() {
-                        return document.createElement("p");
+    describe("getViewModelData", () => {
+        it("basics", () => {
+            const C = Component.extend({
+                tag: "a-pp",
+                view: "<p>{{name}}</p>",
+                ViewModel: {
+                    first: { type: "string", default: "Kevin" },
+                    last: { type: "string", default: "McCallister" },
+                    get name() {
+                        return this.first + " " + this.last;
                     }
                 }
-            }
+            });
+
+            const c = new C();
+            const el = c.element;
+
+            const {
+                viewModel: viewModelFromEl,
+                tagName: tagNameFromEl,
+                type: typeFromEl,
+                namesByPath: namesByPathFromEl
+            } = devtools.getViewModelData(el).detail;
+
+            assert.equal(typeFromEl, "viewModel", "type from el");
+            assert.equal(tagNameFromEl, "<a-pp>", "tagName from el");
+            assert.deepEqual(
+                viewModelFromEl,
+                { first: "Kevin", last: "McCallister", name: "Kevin McCallister" },
+                "viewModel from el"
+            );
+            assert.deepEqual(
+                namesByPathFromEl,
+                {},
+                "namesByPath from el"
+            );
+
+            const {
+                viewModel: viewModelFromChild,
+                tagName: tagNameFromChild,
+                type: typeFromChild,
+                namesByPath: namesByPathFromChild
+            } = devtools.getViewModelData(el.querySelector("p")).detail;
+
+            assert.equal(typeFromChild, "viewModel", "type from child of el");
+            assert.equal(tagNameFromChild, "<a-pp>", "tagName from child of el");
+            assert.deepEqual(
+                viewModelFromChild,
+                { first: "Kevin", last: "McCallister", name: "Kevin McCallister" },
+                "viewModel from child of el"
+            );
+            assert.deepEqual(
+                namesByPathFromChild,
+                {},
+                "namesByPath from child of el"
+            );
         });
 
-        const c = new C();
-        const el = c.element;
-
-        const {
-            viewModel,
-            namesByPath,
-            messages
-        } = devtools.getViewModelData(el).detail;
-
-        assert.deepEqual(
-            viewModel,
-            { element: {} },
-            "gets correct viewModel data"
-        );
-
-        assert.deepEqual(
-            namesByPath,
-            { element: "HTMLParagraphElement{}" },
-            "gets correct name data"
-        );
-
-        assert.deepEqual(
-            messages,
-            { element: { type: "info", message: "CanJS Devtools does not expand HTML Elements" } },
-            "gets correct message data"
-        );
-    });
-
-    it("getViewModelData can handle ViewModels with lists of elements on them", () => {
-        const C = Component.extend({
-            tag: "app-with-list-of-elements",
-            view: "<p>this app has a list of elements on its viewModel</p>",
-            ViewModel: {
-                elements: {
-                    default() {
-                        return new DefineList([
-                            document.createElement("p"),
-                            document.createElement("p")
-                        ]);
+        it("can handle elements", () => {
+            const C = Component.extend({
+                tag: "app-with-element",
+                view: "<p>this app has an element on its viewModel</p>",
+                ViewModel: {
+                    element: {
+                        default() {
+                            return document.createElement("p");
+                        }
                     }
                 }
-            }
+            });
+
+            const c = new C();
+            const el = c.element;
+
+            const {
+                viewModel,
+                namesByPath,
+                messages
+            } = devtools.getViewModelData(el).detail;
+
+            assert.deepEqual(
+                viewModel,
+                { element: {} },
+                "gets correct viewModel data"
+            );
+
+            assert.deepEqual(
+                namesByPath,
+                { element: "HTMLParagraphElement{}" },
+                "gets correct name data"
+            );
+
+            assert.deepEqual(
+                messages,
+                { element: { type: "info", message: "CanJS Devtools does not expand HTML Elements" } },
+                "gets correct message data"
+            );
         });
 
-        const c = new C();
-        const el = c.element;
-
-        const {
-            viewModel,
-            namesByPath,
-            messages
-        } = devtools.getViewModelData(el).detail;
-
-        assert.deepEqual(
-            viewModel,
-            { elements: { } },
-            "gets correct viewModel data - unexpanded"
-        );
-
-        assert.deepEqual(
-            namesByPath,
-            { elements: "DefineList[]" },
-            "gets correct name data - unexpanded"
-        );
-
-        assert.deepEqual(
-            messages,
-            {},
-            "gets correct message data - unexpanded"
-        );
-
-        const {
-            viewModel: viewModelListExpanded,
-            namesByPath: namesByPathListExpanded,
-            messages: messagesListExpanded
-        } = devtools.getViewModelData(el, { expandedKeys: [ "elements" ] }).detail;
-
-        assert.deepEqual(
-            viewModelListExpanded,
-            { elements: { 0: { }, 1: { } } },
-            "gets correct viewModel data - list expanded"
-        );
-
-        assert.deepEqual(
-            namesByPathListExpanded,
-            {
-                elements: "DefineList[]",
-                "elements.0": "HTMLParagraphElement{}",
-                "elements.1": "HTMLParagraphElement{}"
-            },
-            "gets correct name data - list expanded"
-        );
-
-        assert.deepEqual(
-            messagesListExpanded,
-            {
-                "elements.0": { type: "info", message: "CanJS Devtools does not expand HTML Elements" },
-                "elements.1": { type: "info", message: "CanJS Devtools does not expand HTML Elements" },
-            },
-            "gets correct message data - list expanded"
-        );
-    });
-
-    it("getViewModelData can handle ViewModels with functions on them", () => {
-        const C = Component.extend({
-            tag: "app-with-functions",
-            view: "<p>this app uses functions</p>",
-            ViewModel: {
-                Thing: {
-                    default: () => function Thing() {}
+        it("can handle lists of elements", () => {
+            const C = Component.extend({
+                tag: "app-with-list-of-elements",
+                view: "<p>this app has a list of elements on its viewModel</p>",
+                ViewModel: {
+                    elements: {
+                        default() {
+                            return new DefineList([
+                                document.createElement("p"),
+                                document.createElement("p")
+                            ]);
+                        }
+                    }
                 }
-            }
+            });
+
+            const c = new C();
+            const el = c.element;
+
+            const {
+                viewModel,
+                namesByPath,
+                messages
+            } = devtools.getViewModelData(el).detail;
+
+            assert.deepEqual(
+                viewModel,
+                { elements: { } },
+                "gets correct viewModel data - unexpanded"
+            );
+
+            assert.deepEqual(
+                namesByPath,
+                { elements: "DefineList[]" },
+                "gets correct name data - unexpanded"
+            );
+
+            assert.deepEqual(
+                messages,
+                {},
+                "gets correct message data - unexpanded"
+            );
+
+            const {
+                viewModel: viewModelListExpanded,
+                namesByPath: namesByPathListExpanded,
+                messages: messagesListExpanded
+            } = devtools.getViewModelData(el, { expandedKeys: [ "elements" ] }).detail;
+
+            assert.deepEqual(
+                viewModelListExpanded,
+                { elements: { 0: { }, 1: { } } },
+                "gets correct viewModel data - list expanded"
+            );
+
+            assert.deepEqual(
+                namesByPathListExpanded,
+                {
+                    elements: "DefineList[]",
+                    "elements.0": "HTMLParagraphElement{}",
+                    "elements.1": "HTMLParagraphElement{}"
+                },
+                "gets correct name data - list expanded"
+            );
+
+            assert.deepEqual(
+                messagesListExpanded,
+                {
+                    "elements.0": { type: "info", message: "CanJS Devtools does not expand HTML Elements" },
+                    "elements.1": { type: "info", message: "CanJS Devtools does not expand HTML Elements" },
+                },
+                "gets correct message data - list expanded"
+            );
         });
 
-        const c = new C();
-        const el = c.element;
-
-        const {
-            viewModel
-        } = devtools.getViewModelData(el).detail;
-
-
-        assert.deepEqual(
-            viewModel,
-            { },
-            "works for DefineMaps with functions on them"
-        );
-    });
-
-    it("getViewModelData can handle ViewModels with circular references (#46)", () => {
-        const circular = {};
-        circular.circular = circular;
-
-        const C = Component.extend({
-            tag: "circular-app",
-            view: "<p>hello</p>",
-            ViewModel: {
-                circular: {
-                    default: () => circular
+        it("can handle functions", () => {
+            const C = Component.extend({
+                tag: "app-with-functions",
+                view: "<p>this app uses functions</p>",
+                ViewModel: {
+                    Thing: {
+                        default: () => function Thing() {}
+                    }
                 }
-            }
+            });
+
+            const c = new C();
+            const el = c.element;
+
+            const {
+                viewModel,
+                namesByPath,
+                messages
+            } = devtools.getViewModelData(el).detail;
+
+            assert.deepEqual(
+                viewModel,
+                { Thing: { } },
+                "shows an empty object for function so it can be expanded to show function source"
+            );
+
+            assert.deepEqual(
+                namesByPath,
+                { Thing: "function" },
+                "shows correct name for function"
+            );
+
+            assert.deepEqual(
+                messages,
+                { Thing: { type: "info", message: "function Thing() {}" } },
+                "shows function source info message"
+            );
         });
 
-        const c = new C();
-        const el = c.element;
+        it("can handle circular references (#46)", () => {
+            const circular = {};
+            circular.circular = circular;
 
-        const {
-            viewModel,
-            namesByPath,
-            messages
-        } = devtools.getViewModelData(el).detail;
-
-        assert.deepEqual(
-            viewModel,
-            { circular: { } },
-            "gets empty object for circular property"
-        );
-
-        assert.deepEqual(
-            namesByPath,
-            { circular: "Object{}" },
-            "gets correct name for circular property"
-        );
-
-        assert.equal(typeof messages, "object");
-        assert.equal(typeof messages.circular, "object");
-        assert.equal(messages.circular.type, "error");
-        assert.ok(messages.circular.message.match(/Error getting value of "circular":/))
-    });
-
-    it("getViewModelData can handle ViewModels with infinite recursion (#46)", () => {
-        const Thing = DefineMap.extend("Thing", {
-            anotherThing: {
-                default() {
-                    return new Thing();
+            const C = Component.extend({
+                tag: "circular-app",
+                view: "<p>hello</p>",
+                ViewModel: {
+                    circular: {
+                        default: () => circular
+                    }
                 }
-            }
+            });
+
+            const c = new C();
+            const el = c.element;
+
+            const {
+                viewModel,
+                namesByPath,
+                messages
+            } = devtools.getViewModelData(el).detail;
+
+            assert.deepEqual(
+                viewModel,
+                { circular: { } },
+                "gets empty object for circular property"
+            );
+
+            assert.deepEqual(
+                namesByPath,
+                { circular: "Object{}" },
+                "gets correct name for circular property"
+            );
+
+            assert.equal(typeof messages, "object");
+            assert.equal(typeof messages.circular, "object");
+            assert.equal(messages.circular.type, "error");
+            assert.ok(messages.circular.message.match(/Error getting value of "circular":/))
         });
 
-        const C = Component.extend({
-            tag: "circular-app",
-            view: "<p>hello</p>",
-            ViewModel: {
-                thing: { Default: Thing }
-            }
+        it("can handle infinite recursion (#46)", () => {
+            const Thing = DefineMap.extend("Thing", {
+                anotherThing: {
+                    default() {
+                        return new Thing();
+                    }
+                }
+            });
+
+            const C = Component.extend({
+                tag: "circular-app",
+                view: "<p>hello</p>",
+                ViewModel: {
+                    thing: { Default: Thing }
+                }
+            });
+
+            const c = new C();
+            const el = c.element;
+
+            const {
+                viewModel,
+                namesByPath
+            } = devtools.getViewModelData(el).detail;
+
+            assert.deepEqual(
+                viewModel,
+                { thing: { } },
+                "gets empty object for recursive property"
+            );
+
+            assert.deepEqual(
+                namesByPath,
+                { thing: "Thing{}" },
+                "gets correct name"
+            );
         });
 
-        const c = new C();
-        const el = c.element;
+        it("can handle nulls", () => {
+            const C = Component.extend({
+                tag: "app-with-nulls",
+                view: "<p>hello</p>",
+                ViewModel: {
+                    thisIsNull: { default: null }
+                }
+            });
 
-        const {
-            viewModel,
-            tagName,
-            type,
-            namesByPath
-        } = devtools.getViewModelData(el).detail;
+            const c = new C();
+            const el = c.element;
 
-        assert.deepEqual(
-            viewModel,
-            { thing: { } },
-            "gets empty object for recusrive property"
-        );
+            const {
+                viewModel,
+                namesByPath,
+                messages
+            } = devtools.getViewModelData(el).detail;
 
-        assert.deepEqual(
-            namesByPath,
-            { thing: "Thing{}" },
-            "gets correct name"
-        );
+            assert.deepEqual(
+                viewModel,
+                { thisIsNull: null },
+                "gets null for property that is null"
+            );
+
+            assert.deepEqual(
+                messages,
+                { },
+                "gets no messages"
+            );
+        });
+
+        it("can handle empty Maps / Lists / Objects / arrays", () => {
+            const C = Component.extend({
+                tag: "app-with-empties",
+                view: "<p>hello</p>",
+                ViewModel: {
+                    emptyMap: { Default: DefineMap },
+                    emptyList: { Default: DefineList },
+                    emptyObject: {
+                        type: "any",
+                        default() {
+                            return {};
+                        }
+                    },
+                    emptyArray: {
+                        type: "any",
+                        default() {
+                            return [];
+                        }
+                    }
+                }
+            });
+
+            const c = new C();
+            const el = c.element;
+
+            const {
+                viewModel,
+                namesByPath,
+                messages
+            } = devtools.getViewModelData(el, { expandedKeys: [ "emptyMap", "emptyList", "emptyObject", "emptyArray" ] }).detail;
+
+            assert.deepEqual(
+                viewModel,
+                {
+                    emptyMap: {},
+                    emptyList: {},
+                    emptyObject: {},
+                    emptyArray: {}
+                },
+                "viewModel properties are correct"
+            );
+
+            assert.deepEqual(
+                namesByPath,
+                {
+                    emptyMap: "DefineMap{}",
+                    emptyList: "DefineList[]",
+                    emptyObject: "Object{}",
+                    emptyArray: "Array[]"
+                },
+                "names are correct"
+            );
+
+            assert.deepEqual(
+                messages,
+                {
+                    emptyMap: { type: "info", message: "Map is empty" },
+                    emptyList: { type: "info", message: "List is empty" },
+                    emptyObject: { type: "info", message: "Object is empty" },
+                    emptyArray: { type: "info", message: "Array is empty" }
+                },
+                "gets correct messages"
+            );
+        });
     });
 
     it("getNearestElementWithViewModel", () => {
