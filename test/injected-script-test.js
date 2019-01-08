@@ -289,21 +289,50 @@ describe("canjs-devtools-injected-script", () => {
 
         const {
             viewModel,
-            tagName,
-            type,
             namesByPath
         } = devtools.getViewModelData(el).detail;
 
         assert.deepEqual(
             viewModel,
             { thing: { } },
-            "gets empty object for recusrive property"
+            "gets empty object for recursive property"
         );
 
         assert.deepEqual(
             namesByPath,
             { thing: "Thing{}" },
             "gets correct name"
+        );
+    });
+
+    it("getViewModelData can handle ViewModels with nulls", () => {
+        const C = Component.extend({
+            tag: "app-with-nulls",
+            view: "<p>hello</p>",
+            ViewModel: {
+                thisIsNull: { default: null }
+            }
+        });
+
+        const c = new C();
+        const el = c.element;
+
+        const {
+            viewModel,
+            namesByPath,
+            messages
+        } = devtools.getViewModelData(el).detail;
+
+        assert.deepEqual(
+            viewModel,
+            { thisIsNull: null },
+            "gets null for property that is null"
+        );
+
+        assert.deepEqual(
+            messages,
+            { },
+            "gets no messages"
         );
     });
 

@@ -275,6 +275,11 @@
                     continue;
                 }
 
+                if (value === null) {
+                    viewModelData[key] = null;
+                    continue;
+                }
+
                 if (typeof value === "object") {
                     viewModelData[key] = {};
                     namesByPath[path] = canReflect.getName(value);
