@@ -280,6 +280,12 @@
 
                 // don't serialize functions
                 if (typeof value === "function") {
+                    viewModelData[key] = {};
+                    namesByPath[path] = "function";
+                    messages[path] = {
+                        type: "info",
+                        message: value.toString()
+                    };
                     continue;
                 }
 

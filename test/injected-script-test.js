@@ -216,14 +216,27 @@ describe("canjs-devtools-injected-script", () => {
             const el = c.element;
 
             const {
-                viewModel
+                viewModel,
+                namesByPath,
+                messages
             } = devtools.getViewModelData(el).detail;
-
 
             assert.deepEqual(
                 viewModel,
-                { },
-                "works for DefineMaps with functions"
+                { Thing: { } },
+                "shows an empty object for function so it can be expanded to show function source"
+            );
+
+            assert.deepEqual(
+                namesByPath,
+                { Thing: "function" },
+                "shows correct name for function"
+            );
+
+            assert.deepEqual(
+                messages,
+                { Thing: { type: "info", message: "function Thing() {}" } },
+                "shows function source info message"
             );
         });
 
