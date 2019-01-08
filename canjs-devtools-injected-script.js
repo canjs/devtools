@@ -253,6 +253,14 @@
             const namesByPath = {};
             const messages = {};
 
+            if (viewModelKeys.length === 0) {
+                const type = canReflect.isObservableLike(viewModel) ?
+                    (canReflect.isMoreListLikeThanMapLike(viewModel) ? "List" : "Map") :
+                    Array.isArray(viewModel) ? "Array" : "Object";
+
+                messages[parentPath] = { type: "info", message: `${type} is empty` };
+            }
+
             for (let i=0; i<viewModelKeys.length; i++) {
                 let key = viewModelKeys[i];
                 let path = `${parentPath ? parentPath + "." : ""}${key}`;
@@ -284,13 +292,12 @@
                     viewModelData[key] = {};
                     namesByPath[path] = canReflect.getName(value);
 
-                    let toStringed = Object.prototype.toString.call(value);
-
-                    if (toStringed !== "[object Object]" && toStringed.indexOf("[object ") !== -1) {
+                    if (value instanceof Element) {
                         messages[path] = {
                             type: "info",
                             message: "CanJS Devtools does not expand HTML Elements"
                         };
+                        continue;
                     }
 
                     // get serialized data for children of expanded keys

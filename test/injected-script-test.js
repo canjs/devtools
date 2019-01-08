@@ -336,6 +336,71 @@ describe("canjs-devtools-injected-script", () => {
                 "gets no messages"
             );
         });
+
+        it("can handle empty Maps / Lists / Objects / arrays", () => {
+            const C = Component.extend({
+                tag: "app-with-empties",
+                view: "<p>hello</p>",
+                ViewModel: {
+                    emptyMap: { Default: DefineMap },
+                    emptyList: { Default: DefineList },
+                    emptyObject: {
+                        type: "any",
+                        default() {
+                            return {};
+                        }
+                    },
+                    emptyArray: {
+                        type: "any",
+                        default() {
+                            return [];
+                        }
+                    }
+                }
+            });
+
+            const c = new C();
+            const el = c.element;
+
+            const {
+                viewModel,
+                namesByPath,
+                messages
+            } = devtools.getViewModelData(el, { expandedKeys: [ "emptyMap", "emptyList", "emptyObject", "emptyArray" ] }).detail;
+
+            assert.deepEqual(
+                viewModel,
+                {
+                    emptyMap: {},
+                    emptyList: {},
+                    emptyObject: {},
+                    emptyArray: {}
+                },
+                "viewModel properties are correct"
+            );
+
+            assert.deepEqual(
+                namesByPath,
+                {
+                    emptyMap: "DefineMap{}",
+                    emptyList: "DefineList[]",
+                    emptyObject: "Object{}",
+                    emptyArray: "Array[]"
+                },
+                "names are correct"
+            );
+
+            assert.deepEqual(
+                messages,
+                {
+                    emptyMap: { type: "info", message: "Map is empty" },
+                    emptyList: { type: "info", message: "List is empty" },
+                    emptyObject: { type: "info", message: "Object is empty" },
+                    emptyArray: { type: "info", message: "Array is empty" }
+                },
+                "gets correct messages"
+            );
+        });
     });
 
     it("getNearestElementWithViewModel", () => {
