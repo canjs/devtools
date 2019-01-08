@@ -12,6 +12,7 @@ Component.extend({
                 selectedNode:to="selectedNode"
                 viewModelData:bind="viewModelData"
                 typeNamesData:bind="typeNamesData"
+                messages:bind="messages"
                 updateValues:from="updateValues"
                 expandedKeys:to="expandedKeys"
             ></components-panel>
@@ -27,6 +28,7 @@ Component.extend({
                 vm.error = undefined;
                 vm.viewModelData = {};
                 vm.typeNamesData = {};
+                vm.messages = {};
             };
 
             vm.listenTo("selectedNode", (ev, node) => {
@@ -60,6 +62,7 @@ Component.extend({
                             case "success":
                                 Reflect.updateDeep(vm.viewModelData, detail.viewModel);
                                 vm.typeNamesData = detail.namesByPath;
+                                vm.messages = detail.messages;
                                 break;
                         }
                     }
@@ -100,6 +103,7 @@ Component.extend({
         error: "string",
         viewModelData: DefineMap,
         typeNamesData: DefineMap,
+        messages: DefineMap,
         expandedKeys: DefineList,
 
         updateValues: function(data) {
