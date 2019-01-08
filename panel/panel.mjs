@@ -59,7 +59,7 @@ Component.extend({
                                 break;
                             case "success":
                                 Reflect.updateDeep(vm.viewModelData, detail.viewModel);
-                                Reflect.updateDeep(vm.typeNamesData, detail.namesByPath);
+                                vm.typeNamesData = detail.namesByPath;
                                 break;
                         }
                     }

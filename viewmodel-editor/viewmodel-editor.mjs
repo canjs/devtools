@@ -61,8 +61,10 @@ Component.extend({
                                 if (vm.viewModelData) {
                                     if (detail.viewModel) {
                                         Reflect.updateDeep(vm.viewModelData, detail.viewModel);
+                                        vm.typeNamesData = detail.namesByPath;
                                     } else {
                                         Reflect.deleteKeyValue(vm, "viewModelData");
+                                        Reflect.deleteKeyValue(vm, "typeNamesData");
                                     }
                                 } else {
                                     Reflect.setKeyValue(vm, "viewModelData", detail.viewModel);
