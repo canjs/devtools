@@ -861,4 +861,46 @@ describe("canjs-devtools-injected-script", () => {
             assert.equal(devtools.$0.tagName.toLowerCase(), "a-nother-deep-child", "second a-nother-deep-child");
         });
     });
+
+    it("add / toggle / delete breakpoints", () => {
+        let breakpoints = devtools.addBreakpoint("todos.length").detail.breakpoints;
+
+        assert.equal(breakpoints.length, 1, "addBreakpoints adds a breakpoint");
+        assert.equal(breakpoints[0].expression, "todos.length", "first breakpoint has correct expression");
+        assert.equal(breakpoints[0].enabled, true, "first breakpoint is enabled");
+
+        const todosLengthBreakpointId = breakpoints[0].id;
+
+        breakpoints = devtools.addBreakpoint("nameChanges > 5").detail.breakpoints;
+
+        assert.equal(breakpoints.length, 2, "addBreakpoints adds a second breakpoint");
+        assert.equal(breakpoints[1].expression, "nameChanges > 5", "second breakpoint has correct expression");
+        assert.equal(breakpoints[1].enabled, true, "second breakpoint is enabled");
+
+        const nameChangesBreakpointId = breakpoints[1].id;
+
+        breakpoints = devtools.toggleBreakpoint(todosLengthBreakpointId).detail.breakpoints;
+        assert.equal(breakpoints[0].enabled, false, "breakpoint is disabled");
+        assert.equal(breakpoints[1].enabled, true, "second breakpoint is enabled");
+
+        breakpoints = devtools.toggleBreakpoint(nameChangesBreakpointId).detail.breakpoints;
+        assert.equal(breakpoints[0].enabled, false, "breakpoint is disabled");
+        assert.equal(breakpoints[1].enabled, false, "second breakpoint is disabled");
+
+        breakpoints = devtools.toggleBreakpoint(nameChangesBreakpointId).detail.breakpoints;
+        assert.equal(breakpoints[0].enabled, false, "breakpoint is still disabled");
+        assert.equal(breakpoints[1].enabled, true, "second breakpoint is re-enabled");
+
+        breakpoints = devtools.toggleBreakpoint(todosLengthBreakpointId).detail.breakpoints;
+        assert.equal(breakpoints[0].enabled, true, "breakpoint is re-enabled");
+        assert.equal(breakpoints[1].enabled, true, "second breakpoint is still enabled");
+
+        breakpoints = devtools.deleteBreakpoint(todosLengthBreakpointId).detail.breakpoints;
+        assert.equal(breakpoints.length, 1, "first breakpoint is deleted");
+        assert.equal(breakpoints[0].expression, "nameChanges > 5", "remaining breakpoint has correct expression");
+        assert.equal(breakpoints[0].enabled, true, "remaining breakpoint is enabled");
+
+        breakpoints = devtools.deleteBreakpoint(nameChangesBreakpointId).detail.breakpoints;
+        assert.equal(breakpoints.length, 0, "remaining breakpoint is deleted");
+    });
 });

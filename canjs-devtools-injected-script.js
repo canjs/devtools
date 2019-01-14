@@ -8,11 +8,17 @@
         formatGraph,
         mergeDeep;
 
-    let nextId = 0;
+    // component tree variables
+    let nextNodeId = 0;
     let componentTree = [];
     const nodeToIdMap = new WeakMap();
     const nodeToElementMap = new WeakMap();
 
+    // breakpoints variables
+    let nextBreakpointId = 0;
+    const breakpoints = [];
+
+    // helper functions
     const getObjAtKey = (obj, key) => {
         if (!key) {
             return obj;
@@ -31,6 +37,19 @@
 
     const getLastKey = (path) => {
         return path.split(".").pop();
+    };
+
+    const getIndexOfItemInArrayWithId = (arr, id) => {
+        let index = -1;
+
+        arr.some((item, i) => {
+            if (item.id === id) {
+                index = i;
+                return true;
+            }
+        });
+
+        return index;
     };
 
     // expose devtools namespace on the window
@@ -209,6 +228,40 @@
         selectComponentById(id) {
             const node = this.getNodeById(id);
             this.$0 = nodeToElementMap.get(node);
+        },
+
+        addBreakpoint(expression) {
+            const breakpoint = {
+                id: nextBreakpointId++,
+                expression,
+                enabled: true,
+            };
+
+            breakpoints.push(breakpoint);
+
+            return this.makeSuccessResponse({
+                breakpoints
+            });
+        },
+
+        toggleBreakpoint(id) {
+            let index = getIndexOfItemInArrayWithId(breakpoints, id);
+
+            breakpoints[index].enabled = !breakpoints[index].enabled;
+
+            return this.makeSuccessResponse({
+                breakpoints
+            });
+        },
+
+        deleteBreakpoint(id) {
+            let index = getIndexOfItemInArrayWithId(breakpoints, id);
+
+            breakpoints.splice(index, 1);
+
+            return this.makeSuccessResponse({
+                breakpoints
+            });
         },
 
         /*
@@ -415,7 +468,7 @@
             let id = nodeToIdMap.get(node);
 
             if (!id) {
-                id = nextId++;
+                id = nextNodeId++;
                 nodeToIdMap.set(node, id);
             }
 

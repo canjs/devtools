@@ -15,6 +15,10 @@ Component.extend({
                 messages:bind="messages"
                 updateValues:from="updateValues"
                 expandedKeys:to="expandedKeys"
+                breakpoints:bind="breakpoints"
+                addBreakpoint:from="addBreakpoint"
+                toggleBreakpoint:from="toggleBreakpoint"
+                deleteBreakpoint:from="deleteBreakpoint"
             ></components-panel>
         {{/ if }}
     `,
@@ -49,9 +53,9 @@ Component.extend({
                                 "' ] } )";
                     },
                     refreshInterval: 100,
-                    success: function(result) {
-                        var status = result.status;
-                        var detail = result.detail;
+                    success(result) {
+                        const status = result.status;
+                        const detail = result.detail;
 
                         switch(status) {
                             case "ignore":
@@ -72,9 +76,9 @@ Component.extend({
             var stopRefreshingComponentTree = window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
                 fnString: "getComponentTreeData()",
                 refreshInterval: 2000,
-                success: function(result) {
-                    var status = result.status;
-                    var detail = result.detail;
+                success(result) {
+                    const status = result.status;
+                    const detail = result.detail;
 
                     switch(status) {
                         case "ignore":
@@ -89,7 +93,7 @@ Component.extend({
                 }
             });
 
-            return function disconnect() {
+            return () => {
                 stopRefreshingComponentTree();
                 stopRefreshingViewModelData();
             };
@@ -106,10 +110,57 @@ Component.extend({
         messages: DefineMap,
         expandedKeys: DefineList,
 
-        updateValues: function(data) {
+        // Breakpoints Panel data
+        breakpoints: DefineList,
+
+        // ViewModel Editor functions
+        updateValues(data) {
             window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
                 fnString: "updateViewModel(__CANJS_DEVTOOLS__.$0, " + JSON.stringify(data) + ")"
             });
         },
+
+        // Breakpoints Panel functions
+        addBreakpoint(expression) {
+            window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
+                fnString: `addBreakpoint( "${expression}" )`,
+                success(result) {
+                    const status = result.status;
+                    const detail = result.detail;
+
+                    if (status === "success") {
+                        this.breakpoints = detail.breakpoints;
+                    }
+                }
+            });
+        },
+
+        toggleBreakpoint(breakpoint) {
+            window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
+                fnString: `toggleBreakpoint( "${breakpoint.id}" )`,
+                success(result) {
+                    const status = result.status;
+                    const detail = result.detail;
+
+                    if (status === "success") {
+                        this.breakpoints = detail.breakpoints;
+                    }
+                }
+            });
+        },
+
+        deleteBreakpoint(breakpoint) {
+            window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
+                fnString: `deleteBreakpoint( "${breakpoint.id}" )`,
+                success(result) {
+                    const status = result.status;
+                    const detail = result.detail;
+
+                    if (status === "success") {
+                        this.breakpoints = detail.breakpoints;
+                    }
+                }
+            });
+        }
     }
 });
