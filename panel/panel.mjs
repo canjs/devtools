@@ -25,8 +25,8 @@ Component.extend({
 
     ViewModel: {
         connectedCallback() {
-            var vm = this;
-            var stopRefreshingViewModelData = () => {};
+            const vm = this;
+            let stopRefreshingViewModelData = () => {};
 
             const resetViewModelData = () => {
                 vm.error = undefined;
@@ -73,7 +73,7 @@ Component.extend({
                 });
             });
 
-            var stopRefreshingComponentTree = window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
+            const stopRefreshingComponentTree = window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
                 fnString: "getComponentTreeData()",
                 refreshInterval: 2000,
                 success(result) {
@@ -90,6 +90,19 @@ Component.extend({
                             vm.componentTree.updateDeep(detail.tree);
                             break;
                     };
+                }
+            });
+
+            // get initial breakpoints
+            window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
+                fnString: "getBreakpoints()",
+                success(result) {
+                    const status = result.status;
+                    const detail = result.detail;
+
+                    if (status === "success") {
+                        vm.breakpoints = detail.breakpoints;
+                    }
                 }
             });
 
@@ -122,6 +135,8 @@ Component.extend({
 
         // Breakpoints Panel functions
         addBreakpoint(expression) {
+            const vm = this;
+
             window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
                 fnString: `addBreakpoint( "${expression}" )`,
                 success(result) {
@@ -129,35 +144,39 @@ Component.extend({
                     const detail = result.detail;
 
                     if (status === "success") {
-                        this.breakpoints = detail.breakpoints;
+                        vm.breakpoints = detail.breakpoints;
                     }
                 }
             });
         },
 
         toggleBreakpoint(breakpoint) {
+            const vm = this;
+
             window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
-                fnString: `toggleBreakpoint( "${breakpoint.id}" )`,
+                fnString: `toggleBreakpoint( ${breakpoint.id} )`,
                 success(result) {
                     const status = result.status;
                     const detail = result.detail;
 
                     if (status === "success") {
-                        this.breakpoints = detail.breakpoints;
+                        vm.breakpoints = detail.breakpoints;
                     }
                 }
             });
         },
 
         deleteBreakpoint(breakpoint) {
+            const vm = this;
+
             window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
-                fnString: `deleteBreakpoint( "${breakpoint.id}" )`,
+                fnString: `deleteBreakpoint( ${breakpoint.id} )`,
                 success(result) {
                     const status = result.status;
                     const detail = result.detail;
 
                     if (status === "success") {
-                        this.breakpoints = detail.breakpoints;
+                        vm.breakpoints = detail.breakpoints;
                     }
                 }
             });

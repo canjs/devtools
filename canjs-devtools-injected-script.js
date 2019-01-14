@@ -230,6 +230,12 @@
             this.$0 = nodeToElementMap.get(node);
         },
 
+        getBreakpoints() {
+            return this.makeSuccessResponse({
+                breakpoints
+            });
+        },
+
         addBreakpoint(expression) {
             const breakpoint = {
                 id: nextBreakpointId++,
@@ -239,9 +245,7 @@
 
             breakpoints.push(breakpoint);
 
-            return this.makeSuccessResponse({
-                breakpoints
-            });
+            return this.getBreakpoints();
         },
 
         toggleBreakpoint(id) {
@@ -249,9 +253,7 @@
 
             breakpoints[index].enabled = !breakpoints[index].enabled;
 
-            return this.makeSuccessResponse({
-                breakpoints
-            });
+            return this.getBreakpoints();
         },
 
         deleteBreakpoint(id) {
@@ -259,9 +261,7 @@
 
             breakpoints.splice(index, 1);
 
-            return this.makeSuccessResponse({
-                breakpoints
-            });
+            return this.getBreakpoints();
         },
 
         /*

@@ -862,7 +862,7 @@ describe("canjs-devtools-injected-script", () => {
         });
     });
 
-    it("add / toggle / delete breakpoints", () => {
+    it("add / get / toggle / delete breakpoints", () => {
         let breakpoints = devtools.addBreakpoint("todos.length").detail.breakpoints;
 
         assert.equal(breakpoints.length, 1, "addBreakpoints adds a breakpoint");
@@ -871,6 +871,8 @@ describe("canjs-devtools-injected-script", () => {
 
         const todosLengthBreakpointId = breakpoints[0].id;
 
+        assert.deepEqual(devtools.getBreakpoints().detail.breakpoints, breakpoints, "getBreakpoints works");
+
         breakpoints = devtools.addBreakpoint("nameChanges > 5").detail.breakpoints;
 
         assert.equal(breakpoints.length, 2, "addBreakpoints adds a second breakpoint");
@@ -878,6 +880,8 @@ describe("canjs-devtools-injected-script", () => {
         assert.equal(breakpoints[1].enabled, true, "second breakpoint is enabled");
 
         const nameChangesBreakpointId = breakpoints[1].id;
+
+        assert.deepEqual(devtools.getBreakpoints().detail.breakpoints, breakpoints, "getBreakpoints still works");
 
         breakpoints = devtools.toggleBreakpoint(todosLengthBreakpointId).detail.breakpoints;
         assert.equal(breakpoints[0].enabled, false, "breakpoint is disabled");
