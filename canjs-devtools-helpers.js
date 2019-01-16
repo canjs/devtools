@@ -81,43 +81,35 @@ window.CANJS_DEVTOOLS_HELPERS = {
         const displayExpression = prepExpression(expression, "${vmName}");
         const isBooleanExpression = isBoolean(expression);
 
-        return `
-            (function() {
-                const devtools = window.__CANJS_DEVTOOLS__;
-                const vm = devtools.$0.viewModel;
-                const vmName = devtools.canReflect.getName(vm);
+        return `(function() {
+        const Observation = window.__CANJS_DEVTOOLS__.canObservation;
+        const queues = window.__CANJS_DEVTOOLS__.canQueues;
+        const vm = window.__CANJS_DEVTOOLS__.$0.viewModel;
+        const vmName = window.__CANJS_DEVTOOLS__.canReflect.getName(vm);
+        let oldValue = ${realExpression};
 
-                const observation = new devtools.canObservation(() => {
-                    return ${realExpression};
-                });
+        const observation = new Observation(() => {
+            return ${realExpression};
+        });
 
-                const origDependencyChange = observation.dependencyChange;
+        observation.dependencyChange = () => {
+            const newValue = ${realExpression};
+            ${ isBooleanExpression ?
+            `if (newValue == true && oldValue != true) {
+                queues.logStack();
+                ${debuggerStatement};
+            }` :
+            `queues.logStack();
+            ${debuggerStatement};`
+            }
+            oldValue = newValue;
+        };
 
-                let oldValue = ${realExpression};
-
-                observation.dependencyChange = function breakpoint() {
-                    const newValue = ${realExpression};
-
-                    const isBooleanExpression = ${isBooleanExpression};
-                    const shouldBreak = !isBooleanExpression ||
-                        (newValue == true && oldValue != true);
-
-                    if (shouldBreak) {
-                        devtools.canQueues.logStack();
-                        ${debuggerStatement};
-                    }
-
-                    oldValue = newValue;
-
-                    origDependencyChange.apply(this, arguments);
-                };
-
-                return {
-                    expression: \`${displayExpression}\`,
-                    observation: observation
-                };
-            }())
-        `
+        return {
+            expression: \`${displayExpression}\`,
+            observation: observation
+        };
+    }())`
     }
 };
 

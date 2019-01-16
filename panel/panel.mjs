@@ -142,11 +142,9 @@ Component.extend({
             const vm = this;
 
             window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
-                fnString: `
-                    addBreakpoint(
-                        ${ window.CANJS_DEVTOOLS_HELPERS.getBreakpointEvalString(expression) }
-                    )
-                `,
+                fnString: `addBreakpoint(
+    ${ window.CANJS_DEVTOOLS_HELPERS.getBreakpointEvalString(expression) }
+)`,
                 success(result) {
                     const status = result.status;
                     const detail = result.detail;

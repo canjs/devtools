@@ -250,6 +250,9 @@
             breakpoints.push(breakpoint);
 
             if (observation) {
+                Object.defineProperty(observation.dependencyChange, "name", {
+                    value: `${expression} debugger`
+                });
                 canReflect.onValue(observation, noop);
 
                 breakpointToObservableMap.set(
