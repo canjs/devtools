@@ -19,6 +19,7 @@
     let nextBreakpointId = 0;
     const breakpoints = [];
     const breakpointToObservableMap = new WeakMap();
+    const noop = () => {};
 
     // helper functions
     const getObjAtKey = (obj, key) => {
@@ -240,27 +241,16 @@
         },
 
         addBreakpoint({ expression, observation }) {
-            const id = nextBreakpointId++;
-
             const breakpoint = {
-                id,
+                id: nextBreakpointId++,
                 expression,
                 enabled: true,
             };
 
             breakpoints.push(breakpoint);
 
-            // actually create breakpoint
             if (observation) {
-                canReflect.onValue(observation, () => {
-                    const index = getIndexOfItemInArrayWithId(breakpoints, id);
-                    const breakpoint = breakpoints[index];
-
-                    if (breakpoint && breakpoint.enabled) {
-                        canQueues.logStack();
-                        debugger;
-                    }
-                });
+                canReflect.onValue(observation, noop);
 
                 breakpointToObservableMap.set(
                     breakpoint,
@@ -275,6 +265,16 @@
             const index = getIndexOfItemInArrayWithId(breakpoints, id);
             const breakpoint = breakpoints[index];
             breakpoint.enabled = !breakpoint.enabled;
+
+            const observation = breakpointToObservableMap.get(breakpoint);
+            if (observation) {
+                if (breakpoint.enabled) {
+                    canReflect.onValue(observation, noop);
+                } else {
+                    canReflect.offValue(observation, noop);
+                }
+            }
+
             return this.getBreakpoints();
         },
 
@@ -528,6 +528,10 @@
 
         get canReflect() {
             return canReflect;
+        },
+
+        get canQueues() {
+            return canQueues;
         }
     };
 }());

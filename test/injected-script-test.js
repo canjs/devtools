@@ -926,6 +926,12 @@ describe("canjs-devtools-injected-script", () => {
 
             assert.ok(Reflect.isBound(obs), "addBreakpoint binds passed observation");
 
+            devtools.toggleBreakpoint(breakpointId);
+            assert.ok(!Reflect.isBound(obs), "toggleBreakpoint unbinds observation");
+
+            devtools.toggleBreakpoint(breakpointId);
+            assert.ok(Reflect.isBound(obs), "toggleBreakpoint re-binds observation");
+
             devtools.deleteBreakpoint(breakpointId);
             assert.ok(!Reflect.isBound(obs), "deleteBreakpoint unbinds observation");
         });

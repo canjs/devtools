@@ -66,11 +66,15 @@ window.CANJS_DEVTOOLS_HELPERS = {
         };
     },
 
-    getBreakpointEvalString(expression) {
-        const prepExpression = str => {
+    getBreakpointEvalString(expression, debuggerStatement = "debugger") {
+        const prepExpression = (str) => {
             return str.replace(/(^|\s|=|>|<|!|\/|%|\+|-|\*|&|\(|\)|~|\?|,|\[|\])([A-Za-z_])/g, (match, delimiter, prop) => {
                 return `${delimiter}vm.${prop}`;
             });
+        };
+
+        const booleanExpression = (str) => {
+            return /[!=<>]/.test(str);
         };
 
         return `
@@ -82,6 +86,26 @@ window.CANJS_DEVTOOLS_HELPERS = {
                 const observation = new devtools.canObservation(() => {
                     return ${prepExpression(expression)};
                 });
+
+                const origDependencyChange = observation.dependencyChange;
+
+                let oldValue = ${prepExpression(expression)};
+
+                observation.dependencyChange = function breakpoint() {
+                    const newValue = ${prepExpression(expression)};
+
+                    const shouldBreak = !${booleanExpression(expression)} ||
+                        (newValue == true && oldValue != true);
+
+                    if (shouldBreak) {
+                        devtools.canQueues.logStack();
+                        ${debuggerStatement};
+                    }
+
+                    oldValue = newValue;
+
+                    origDependencyChange.apply(this, arguments);
+                };
 
                 return {
                     expression: expression,

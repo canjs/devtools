@@ -1,7 +1,7 @@
 import mocha from "steal-mocha";
 import chai from "chai/chai";
 
-import { Component, DefineMap, DefineList, debug, Reflect, Observation } from "can";
+import { Component, DefineMap, DefineList, debug, Reflect, Observation, queues } from "can";
 
 const assert = chai.assert;
 
@@ -66,7 +66,7 @@ describe("canjs-devtools-helpers", () => {
     });
 
     describe("getBreakpointEvalString", () => {
-        let $0;
+        let $0, debuggerHitCount, mock;
 
         beforeEach(() => {
             $0 = { viewModel: {} };
@@ -74,7 +74,16 @@ describe("canjs-devtools-helpers", () => {
             window.__CANJS_DEVTOOLS__ = {
                 $0,
                 canReflect: Reflect,
-                canObservation: Observation
+                canObservation: Observation,
+                canQueues: queues
+            };
+
+            // mock debugger so we can track when it is read
+            debuggerHitCount = 0;
+            mock = {
+                get _debugger() {
+                    debuggerHitCount++;
+                }
             };
         });
 
@@ -83,25 +92,51 @@ describe("canjs-devtools-helpers", () => {
             $0 = null;
         });
 
-        it("hobbies.length", (done) => {
+        it("hobbies.length", () => {
             let devtoolsVM = new (DefineMap.extend("DevtoolsVM", {
-                hobbies: new DefineList({})
+                hobbies: { Default: DefineList }
             }));
 
             $0.viewModel = devtoolsVM;
 
-            let str = helpers.getBreakpointEvalString("hobbies.length");
+            let str = helpers.getBreakpointEvalString("hobbies.length", "mock._debugger");
             let breakpoint = eval( str );
 
             assert.equal(breakpoint.expression, "DevtoolsVM{}.hobbies.length");
             assert.equal(Reflect.getValue(breakpoint.observation), devtoolsVM.hobbies.length, "obs === hobbies.length");
 
-            Reflect.onValue(breakpoint.observation, () => {
-                assert.ok("observation has correct binding");
-                done();
-            });
+            Reflect.onValue(breakpoint.observation, () => {});
 
             devtoolsVM.hobbies.push("skiing");
+            assert.equal(debuggerHitCount, 1, "debugger hit once");
+
+            devtoolsVM.hobbies.push("badminton");
+            assert.equal(debuggerHitCount, 2, "debugger hit again");
+        });
+
+        it("hobbies.length > 1", () => {
+            let devtoolsVM = new (DefineMap.extend("DevtoolsVM", {
+                hobbies: { Default: DefineList }
+            }));
+
+            $0.viewModel = devtoolsVM;
+
+            let str = helpers.getBreakpointEvalString("hobbies.length > 1", "mock._debugger");
+            let breakpoint = eval( str );
+
+            assert.equal(breakpoint.expression, "DevtoolsVM{}.hobbies.length > 1");
+            assert.equal(Reflect.getValue(breakpoint.observation), false, "obs === false");
+
+            Reflect.onValue(breakpoint.observation, () => {});
+
+            devtoolsVM.hobbies.push("skiing");
+            assert.equal(debuggerHitCount, 0, "debugger not hit");
+
+            devtoolsVM.hobbies.push("badminton");
+            assert.equal(debuggerHitCount, 1, "debugger hit once");
+
+            devtoolsVM.hobbies.push("luge");
+            assert.equal(debuggerHitCount, 1, "debugger not hit again");
         });
     });
 });
