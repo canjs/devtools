@@ -67,34 +67,39 @@ window.CANJS_DEVTOOLS_HELPERS = {
     },
 
     getBreakpointEvalString(expression, debuggerStatement = "debugger") {
-        const prepExpression = (str) => {
+        const prepExpression = (str, vmStr) => {
             return str.replace(/(^|\s|=|>|<|!|\/|%|\+|-|\*|&|\(|\)|~|\?|,|\[|\])([A-Za-z_])/g, (match, delimiter, prop) => {
-                return `${delimiter}vm.${prop}`;
+                return `${delimiter}${vmStr}.${prop}`;
             });
         };
 
-        const booleanExpression = (str) => {
+        const isBoolean = (str) => {
             return /[!=<>]/.test(str);
         };
+
+        const realExpression = prepExpression(expression, "vm");
+        const displayExpression = prepExpression(expression, "${vmName}");
+        const isBooleanExpression = isBoolean(expression);
 
         return `
             (function() {
                 const devtools = window.__CANJS_DEVTOOLS__;
                 const vm = devtools.$0.viewModel;
-                const expression = devtools.canReflect.getName(vm) + ".${expression}";
+                const vmName = devtools.canReflect.getName(vm);
 
                 const observation = new devtools.canObservation(() => {
-                    return ${prepExpression(expression)};
+                    return ${realExpression};
                 });
 
                 const origDependencyChange = observation.dependencyChange;
 
-                let oldValue = ${prepExpression(expression)};
+                let oldValue = ${realExpression};
 
                 observation.dependencyChange = function breakpoint() {
-                    const newValue = ${prepExpression(expression)};
+                    const newValue = ${realExpression};
 
-                    const shouldBreak = !${booleanExpression(expression)} ||
+                    const isBooleanExpression = ${isBooleanExpression};
+                    const shouldBreak = !isBooleanExpression ||
                         (newValue == true && oldValue != true);
 
                     if (shouldBreak) {
@@ -108,7 +113,7 @@ window.CANJS_DEVTOOLS_HELPERS = {
                 };
 
                 return {
-                    expression: expression,
+                    expression: \`${displayExpression}\`,
                     observation: observation
                 };
             }())

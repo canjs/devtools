@@ -138,5 +138,34 @@ describe("canjs-devtools-helpers", () => {
             devtoolsVM.hobbies.push("luge");
             assert.equal(debuggerHitCount, 1, "debugger not hit again");
         });
+
+        it("hobbies.length > counter", () => {
+            let devtoolsVM = new (DefineMap.extend("DevtoolsVM", {
+                hobbies: { Default: DefineList },
+                counter: { default: 2 }
+            }));
+
+            $0.viewModel = devtoolsVM;
+
+            let str = helpers.getBreakpointEvalString("hobbies.length > counter", "mock._debugger");
+            let breakpoint = eval( str );
+
+            assert.equal(breakpoint.expression, "DevtoolsVM{}.hobbies.length > DevtoolsVM{}.counter");
+            assert.equal(Reflect.getValue(breakpoint.observation), false, "has correct value");
+
+            Reflect.onValue(breakpoint.observation, () => {});
+
+            devtoolsVM.hobbies.push("skiing");
+            assert.equal(debuggerHitCount, 0, "debugger not hit");
+
+            devtoolsVM.hobbies.push("badminton");
+            assert.equal(debuggerHitCount, 0, "debugger still not hit");
+
+            devtoolsVM.hobbies.push("curling");
+            assert.equal(debuggerHitCount, 1, "debugger hit");
+
+            devtoolsVM.hobbies.push("fencing");
+            assert.equal(debuggerHitCount, 1, "debugger not hit again");
+        });
     });
 });
