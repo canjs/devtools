@@ -2,10 +2,11 @@
     // CanJS modules set up by register function
     let viewModelSymbol,
         getOwnKeysSymbol,
-        canReflect,
+        canObservation,
         canQueues,
-        getGraph,
+        canReflect,
         formatGraph,
+        getGraph,
         mergeDeep;
 
     // component tree variables
@@ -17,6 +18,7 @@
     // breakpoints variables
     let nextBreakpointId = 0;
     const breakpoints = [];
+    const breakpointToObservableMap = new WeakMap();
 
     // helper functions
     const getObjAtKey = (obj, key) => {
@@ -66,10 +68,11 @@
         register(can) {
             viewModelSymbol = can.Symbol.for("can.viewModel");
             getOwnKeysSymbol = can.Symbol.for("can.getOwnKeys");
-            canReflect = can.Reflect;
+            canObservation = can.Observation;
             canQueues = can.queues;
-            getGraph = can.getGraph;
+            canReflect = can.Reflect;
             formatGraph = can.formatGraph;
+            getGraph = can.getGraph;
             mergeDeep = can.mergeDeep;
 
             // register page so inspectedWindow.eval can call devtools functions in this frame
@@ -236,31 +239,53 @@
             });
         },
 
-        addBreakpoint(expression) {
+        addBreakpoint({ expression, observation }) {
+            const id = nextBreakpointId++;
+
             const breakpoint = {
-                id: nextBreakpointId++,
+                id,
                 expression,
                 enabled: true,
             };
 
             breakpoints.push(breakpoint);
 
+            // actually create breakpoint
+            if (observation) {
+                canReflect.onValue(observation, () => {
+                    const index = getIndexOfItemInArrayWithId(breakpoints, id);
+                    const breakpoint = breakpoints[index];
+
+                    if (breakpoint && breakpoint.enabled) {
+                        canQueues.logStack();
+                        debugger;
+                    }
+                });
+
+                breakpointToObservableMap.set(
+                    breakpoint,
+                    observation
+                );
+            }
+
             return this.getBreakpoints();
         },
 
         toggleBreakpoint(id) {
-            let index = getIndexOfItemInArrayWithId(breakpoints, id);
-
-            breakpoints[index].enabled = !breakpoints[index].enabled;
-
+            const index = getIndexOfItemInArrayWithId(breakpoints, id);
+            const breakpoint = breakpoints[index];
+            breakpoint.enabled = !breakpoint.enabled;
             return this.getBreakpoints();
         },
 
         deleteBreakpoint(id) {
-            let index = getIndexOfItemInArrayWithId(breakpoints, id);
-
+            const index = getIndexOfItemInArrayWithId(breakpoints, id);
+            const breakpoint = breakpoints[index];
+            const observation = breakpointToObservableMap.get(breakpoint);
+            if (observation) {
+                canReflect.offValue(observation);
+            }
             breakpoints.splice(index, 1);
-
             return this.getBreakpoints();
         },
 
@@ -495,6 +520,14 @@
                     return found;
                 }
             }
+        },
+
+        get canObservation() {
+            return canObservation || window.can.Observation;
+        },
+
+        get canReflect() {
+            return canReflect;
         }
     };
 }());

@@ -16,6 +16,7 @@ Component.extend({
                 updateValues:from="updateValues"
                 expandedKeys:to="expandedKeys"
                 breakpoints:bind="breakpoints"
+                {{! breakpointsError:bind="breakpointsError" }}
                 addBreakpoint:from="addBreakpoint"
                 toggleBreakpoint:from="toggleBreakpoint"
                 deleteBreakpoint:from="deleteBreakpoint"
@@ -112,18 +113,21 @@ Component.extend({
             };
         },
 
+        // general component data
+        error: "string",
+
         // Component Tree data
         componentTree: DefineList,
         selectedNode: DefineMap,
 
         // ViewModel Editor data
-        error: "string",
         viewModelData: DefineMap,
         typeNamesData: DefineMap,
         messages: DefineMap,
         expandedKeys: DefineList,
 
         // Breakpoints Panel data
+        breakpointsError: "string",
         breakpoints: DefineList,
 
         // ViewModel Editor functions
@@ -138,13 +142,22 @@ Component.extend({
             const vm = this;
 
             window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
-                fnString: `addBreakpoint( "${expression}" )`,
+                fnString: `
+                    addBreakpoint(
+                        ${ window.CANJS_DEVTOOLS_HELPERS.getBreakpointEvalString(expression) }
+                    )
+                `,
                 success(result) {
                     const status = result.status;
                     const detail = result.detail;
 
-                    if (status === "success") {
-                        vm.breakpoints = detail.breakpoints;
+                    switch(status) {
+                        case "error":
+                            vm.breakpointsError = detail;
+                            break;
+                        case "success":
+                            vm.breakpoints = detail.breakpoints;
+                            break;
                     }
                 }
             });

@@ -64,6 +64,31 @@ window.CANJS_DEVTOOLS_HELPERS = {
                 clearTimeout(id);
             });
         };
+    },
+
+    getBreakpointEvalString(expression) {
+        const prepExpression = str => {
+            return str.replace(/(^|\s|=|>|<|!|\/|%|\+|-|\*|&|\(|\)|~|\?|,|\[|\])([A-Za-z_])/g, (match, delimiter, prop) => {
+                return `${delimiter}vm.${prop}`;
+            });
+        };
+
+        return `
+            (function() {
+                const devtools = window.__CANJS_DEVTOOLS__;
+                const vm = devtools.$0.viewModel;
+                const expression = devtools.canReflect.getName(vm) + ".${expression}";
+
+                const observation = new devtools.canObservation(() => {
+                    return ${prepExpression(expression)};
+                });
+
+                return {
+                    expression: expression,
+                    observation: observation
+                };
+            }())
+        `
     }
 };
 
