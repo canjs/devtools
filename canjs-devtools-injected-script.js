@@ -2,17 +2,26 @@
     // CanJS modules set up by register function
     let viewModelSymbol,
         getOwnKeysSymbol,
-        canReflect,
+        canObservation,
         canQueues,
-        getGraph,
+        canReflect,
         formatGraph,
+        getGraph,
         mergeDeep;
 
-    let nextId = 0;
+    // component tree variables
+    let nextNodeId = 0;
     let componentTree = [];
     const nodeToIdMap = new WeakMap();
     const nodeToElementMap = new WeakMap();
 
+    // breakpoints variables
+    let nextBreakpointId = 0;
+    const breakpoints = [];
+    const breakpointToObservableMap = new WeakMap();
+    const noop = () => {};
+
+    // helper functions
     const getObjAtKey = (obj, key) => {
         if (!key) {
             return obj;
@@ -33,6 +42,19 @@
         return path.split(".").pop();
     };
 
+    const getIndexOfItemInArrayWithId = (arr, id) => {
+        let index = -1;
+
+        arr.some((item, i) => {
+            if (item.id === id) {
+                index = i;
+                return true;
+            }
+        });
+
+        return index;
+    };
+
     // expose devtools namespace on the window
     window.__CANJS_DEVTOOLS__ = {
         // flag indicating whether register has been called
@@ -47,10 +69,11 @@
         register(can) {
             viewModelSymbol = can.Symbol.for("can.viewModel");
             getOwnKeysSymbol = can.Symbol.for("can.getOwnKeys");
-            canReflect = can.Reflect;
+            canObservation = can.Observation;
             canQueues = can.queues;
-            getGraph = can.getGraph;
+            canReflect = can.Reflect;
             formatGraph = can.formatGraph;
+            getGraph = can.getGraph;
             mergeDeep = can.mergeDeep;
 
             // register page so inspectedWindow.eval can call devtools functions in this frame
@@ -209,6 +232,67 @@
         selectComponentById(id) {
             const node = this.getNodeById(id);
             this.$0 = nodeToElementMap.get(node);
+        },
+
+        getBreakpoints() {
+            return this.makeSuccessResponse({
+                breakpoints
+            });
+        },
+
+        addBreakpoint({ expression, observation, error }) {
+            if (error) {
+                return this.makeErrorResponse(error);
+            }
+            const breakpoint = {
+                id: nextBreakpointId++,
+                expression,
+                enabled: true,
+            };
+
+            breakpoints.push(breakpoint);
+
+            if (observation) {
+                Object.defineProperty(observation.dependencyChange, "name", {
+                    value: `${expression} debugger`
+                });
+                canReflect.onValue(observation, noop);
+
+                breakpointToObservableMap.set(
+                    breakpoint,
+                    observation
+                );
+            }
+
+            return this.getBreakpoints();
+        },
+
+        toggleBreakpoint(id) {
+            const index = getIndexOfItemInArrayWithId(breakpoints, id);
+            const breakpoint = breakpoints[index];
+            breakpoint.enabled = !breakpoint.enabled;
+
+            const observation = breakpointToObservableMap.get(breakpoint);
+            if (observation) {
+                if (breakpoint.enabled) {
+                    canReflect.onValue(observation, noop);
+                } else {
+                    canReflect.offValue(observation, noop);
+                }
+            }
+
+            return this.getBreakpoints();
+        },
+
+        deleteBreakpoint(id) {
+            const index = getIndexOfItemInArrayWithId(breakpoints, id);
+            const breakpoint = breakpoints[index];
+            const observation = breakpointToObservableMap.get(breakpoint);
+            if (observation) {
+                canReflect.offValue(observation);
+            }
+            breakpoints.splice(index, 1);
+            return this.getBreakpoints();
         },
 
         /*
@@ -415,7 +499,7 @@
             let id = nodeToIdMap.get(node);
 
             if (!id) {
-                id = nextId++;
+                id = nextNodeId++;
                 nodeToIdMap.set(node, id);
             }
 
@@ -442,6 +526,18 @@
                     return found;
                 }
             }
+        },
+
+        get canObservation() {
+            return canObservation || window.can.Observation;
+        },
+
+        get canReflect() {
+            return canReflect;
+        },
+
+        get canQueues() {
+            return canQueues;
         }
     };
 }());

@@ -21,7 +21,7 @@
   },
   "homepage": "https://canjs.com",
   "dependencies": {
-    "can-devtools-components": "^0.8.1"
+    "can-devtools-components": "^0.10.0"
   },
   "devDependencies": {
     "can": "^5.17.2",

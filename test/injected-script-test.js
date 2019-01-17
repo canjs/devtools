@@ -1,7 +1,7 @@
 import mocha from "steal-mocha";
 import chai from "chai/chai";
 
-import { Component, DefineMap, DefineList, debug } from "can";
+import { Component, DefineMap, DefineList, debug, Reflect, Observation } from "can";
 import "../canjs-devtools-injected-script";
 
 const assert = chai.assert;
@@ -859,6 +859,88 @@ describe("canjs-devtools-injected-script", () => {
             devtools.selectComponentById(9);
             assert.ok(isElement(devtools.$0), "AnotherDeepChild");
             assert.equal(devtools.$0.tagName.toLowerCase(), "a-nother-deep-child", "second a-nother-deep-child");
+        });
+    });
+
+    describe("add / get / toggle / delete breakpoints", () => {
+        it("basics", () => {
+            let breakpoints = devtools.addBreakpoint({
+                expression: "todos.length"
+            }).detail.breakpoints;
+
+            assert.equal(breakpoints.length, 1, "addBreakpoint adds a breakpoint");
+            assert.equal(breakpoints[0].expression, "todos.length", "first breakpoint has correct expression");
+            assert.equal(breakpoints[0].enabled, true, "first breakpoint is enabled");
+
+            const todosLengthBreakpointId = breakpoints[0].id;
+
+            assert.deepEqual(devtools.getBreakpoints().detail.breakpoints, breakpoints, "getBreakpoints works");
+
+            breakpoints = devtools.addBreakpoint({
+                expression: "person.nameChanges > 5"
+            }).detail.breakpoints;
+
+            assert.equal(breakpoints.length, 2, "addBreakpoint adds a second breakpoint");
+            assert.equal(breakpoints[1].expression, "person.nameChanges > 5", "second breakpoint has correct expression");
+            assert.equal(breakpoints[1].enabled, true, "second breakpoint is enabled");
+
+            const nameChangesBreakpointId = breakpoints[1].id;
+
+            assert.deepEqual(devtools.getBreakpoints().detail.breakpoints, breakpoints, "getBreakpoints still works");
+
+            breakpoints = devtools.toggleBreakpoint(todosLengthBreakpointId).detail.breakpoints;
+            assert.equal(breakpoints[0].enabled, false, "breakpoint is disabled");
+            assert.equal(breakpoints[1].enabled, true, "second breakpoint is enabled");
+
+            breakpoints = devtools.toggleBreakpoint(nameChangesBreakpointId).detail.breakpoints;
+            assert.equal(breakpoints[0].enabled, false, "breakpoint is disabled");
+            assert.equal(breakpoints[1].enabled, false, "second breakpoint is disabled");
+
+            breakpoints = devtools.toggleBreakpoint(nameChangesBreakpointId).detail.breakpoints;
+            assert.equal(breakpoints[0].enabled, false, "breakpoint is still disabled");
+            assert.equal(breakpoints[1].enabled, true, "second breakpoint is re-enabled");
+
+            breakpoints = devtools.toggleBreakpoint(todosLengthBreakpointId).detail.breakpoints;
+            assert.equal(breakpoints[0].enabled, true, "breakpoint is re-enabled");
+            assert.equal(breakpoints[1].enabled, true, "second breakpoint is still enabled");
+
+            breakpoints = devtools.deleteBreakpoint(todosLengthBreakpointId).detail.breakpoints;
+            assert.equal(breakpoints.length, 1, "first breakpoint is deleted");
+            assert.equal(breakpoints[0].expression, "person.nameChanges > 5", "remaining breakpoint has correct expression");
+            assert.equal(breakpoints[0].enabled, true, "remaining breakpoint is enabled");
+
+            breakpoints = devtools.deleteBreakpoint(nameChangesBreakpointId).detail.breakpoints;
+            assert.equal(breakpoints.length, 0, "remaining breakpoint is deleted");
+        });
+
+        it("binds and unbinds observation", () => {
+            const Todos = DefineList.extend("Todos", {});
+            const todos = new Todos();
+            let obs = new Observation(() => todos.length);
+            let breakpoints = devtools.addBreakpoint({
+                expression: "todos.length",
+                observation: obs
+            }).detail.breakpoints;
+
+            const breakpointId = breakpoints[0].id;
+
+            assert.ok(Reflect.isBound(obs), "addBreakpoint binds passed observation");
+
+            devtools.toggleBreakpoint(breakpointId);
+            assert.ok(!Reflect.isBound(obs), "toggleBreakpoint unbinds observation");
+
+            devtools.toggleBreakpoint(breakpointId);
+            assert.ok(Reflect.isBound(obs), "toggleBreakpoint re-binds observation");
+
+            devtools.deleteBreakpoint(breakpointId);
+            assert.ok(!Reflect.isBound(obs), "deleteBreakpoint unbinds observation");
+        });
+
+        it("handles errors", () => {
+            let resp = devtools.addBreakpoint({ error: "no component" });
+
+            assert.equal(resp.status, "error", "status === error");
+            assert.equal(resp.detail, "no component", "detail is the error message");
         });
     });
 });

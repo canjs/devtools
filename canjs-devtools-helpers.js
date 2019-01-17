@@ -64,6 +64,56 @@ window.CANJS_DEVTOOLS_HELPERS = {
                 clearTimeout(id);
             });
         };
+    },
+
+    getBreakpointEvalString(expression, debuggerStatement = "debugger") {
+        const prepExpression = (str, vmStr) => {
+            return str.replace(/(^|\s|=|>|<|!|\/|%|\+|-|\*|&|\(|\)|~|\?|,|\[|\])([A-Za-z_])/g, (match, delimiter, prop) => {
+                return `${delimiter}${vmStr}.${prop}`;
+            });
+        };
+
+        const isBoolean = (str) => {
+            return /[!=<>]/.test(str);
+        };
+
+        const realExpression = prepExpression(expression, "vm");
+        const displayExpression = prepExpression(expression, "${vmName}");
+        const isBooleanExpression = isBoolean(expression);
+
+        return `(function() {
+        const Observation = window.__CANJS_DEVTOOLS__.canObservation;
+        const queues = window.__CANJS_DEVTOOLS__.canQueues;
+        const selectedComponent = window.__CANJS_DEVTOOLS__.$0;
+        if (!selectedComponent) {
+            return { error: "Please select a component in order to create a mutation breakpoint for its ViewModel" };
+        }
+        const vm = selectedComponent.viewModel;
+        const vmName = window.__CANJS_DEVTOOLS__.canReflect.getName(vm);
+        let oldValue = ${realExpression};
+
+        const observation = new Observation(() => {
+            return ${realExpression};
+        });
+
+        observation.dependencyChange = () => {
+            const newValue = ${realExpression};
+            ${ isBooleanExpression ?
+            `if (newValue == true && oldValue != true) {
+                queues.logStack();
+                ${debuggerStatement};
+            }` :
+            `queues.logStack();
+            ${debuggerStatement};`
+            }
+            oldValue = newValue;
+        };
+
+        return {
+            expression: \`${displayExpression}\`,
+            observation: observation
+        };
+    }())`
     }
 };
 
