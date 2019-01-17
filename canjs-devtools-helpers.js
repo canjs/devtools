@@ -84,7 +84,11 @@ window.CANJS_DEVTOOLS_HELPERS = {
         return `(function() {
         const Observation = window.__CANJS_DEVTOOLS__.canObservation;
         const queues = window.__CANJS_DEVTOOLS__.canQueues;
-        const vm = window.__CANJS_DEVTOOLS__.$0.viewModel;
+        const selectedComponent = window.__CANJS_DEVTOOLS__.$0;
+        if (!selectedComponent) {
+            return { error: "Please select a component in order to create a mutation breakpoint for its ViewModel" };
+        }
+        const vm = selectedComponent.viewModel;
         const vmName = window.__CANJS_DEVTOOLS__.canReflect.getName(vm);
         let oldValue = ${realExpression};
 

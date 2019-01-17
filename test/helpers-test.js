@@ -167,5 +167,14 @@ describe("canjs-devtools-helpers", () => {
             devtoolsVM.hobbies.push("fencing");
             assert.equal(debuggerHitCount, 1, "debugger not hit again");
         });
+
+        it("returns an error if no componentelement is selected", () => {
+            window.__CANJS_DEVTOOLS__.$0 = null;
+
+            let str = helpers.getBreakpointEvalString("hobbies.length", "mock._debugger");
+            let breakpoint = eval( str );
+
+            assert.equal(breakpoint.error, "Please select a component in order to create a mutation breakpoint for its ViewModel");
+        });
     });
 });

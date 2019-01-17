@@ -240,7 +240,10 @@
             });
         },
 
-        addBreakpoint({ expression, observation }) {
+        addBreakpoint({ expression, observation, error }) {
+            if (error) {
+                return this.makeErrorResponse(error);
+            }
             const breakpoint = {
                 id: nextBreakpointId++,
                 expression,

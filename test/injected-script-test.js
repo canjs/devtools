@@ -935,5 +935,12 @@ describe("canjs-devtools-injected-script", () => {
             devtools.deleteBreakpoint(breakpointId);
             assert.ok(!Reflect.isBound(obs), "deleteBreakpoint unbinds observation");
         });
+
+        it("handles errors", () => {
+            let resp = devtools.addBreakpoint({ error: "no component" });
+
+            assert.equal(resp.status, "error", "status === error");
+            assert.equal(resp.detail, "no component", "detail is the error message");
+        });
     });
 });

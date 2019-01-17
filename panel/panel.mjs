@@ -16,7 +16,7 @@ Component.extend({
                 updateValues:from="updateValues"
                 expandedKeys:to="expandedKeys"
                 breakpoints:bind="breakpoints"
-                {{! breakpointsError:bind="breakpointsError" }}
+                breakpointsError:bind="breakpointsError"
                 addBreakpoint:from="addBreakpoint"
                 toggleBreakpoint:from="toggleBreakpoint"
                 deleteBreakpoint:from="deleteBreakpoint"
