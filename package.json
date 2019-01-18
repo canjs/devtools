@@ -13,7 +13,9 @@
     "web": "http://bitovi.com/"
   },
   "scripts": {
-    "test": "testee test/test.html --browsers firefox"
+    "testee": "testee test/test.html --browsers firefox",
+    "testee-mjs": "testee test/mjs-test.html --browsers firefox",
+    "test": "npm run testee && npm run testee-mjs"
   },
   "license": "MIT",
   "bugs": {
