@@ -1,6 +1,6 @@
 import { Component, DefineMap, DefineList, Reflect } from "../node_modules/can-devtools-components/dist/panel.mjs";
 
-Component.extend({
+export default Component.extend({
     tag: "canjs-devtools-panel",
 
     view: `
@@ -29,13 +29,6 @@ Component.extend({
             const vm = this;
             let stopRefreshingViewModelData = () => {};
 
-            const resetViewModelData = () => {
-                vm.error = undefined;
-                vm.viewModelData = {};
-                vm.typeNamesData = {};
-                vm.messages = {};
-            };
-
             vm.listenTo("selectedNode", (ev, node) => {
                 window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
                     fnString: `selectComponentById(${node.id})`
@@ -43,9 +36,6 @@ Component.extend({
 
                 // teardown old polling
                 stopRefreshingViewModelData();
-
-                // when a new node is selected, remove old viewmodel data
-                resetViewModelData();
 
                 stopRefreshingViewModelData = window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
                     fn: () => {
@@ -114,20 +104,60 @@ Component.extend({
         },
 
         // general component data
-        error: "string",
+        error: {
+            value({ listenTo, lastSet, resolve }) {
+                listenTo(lastSet, resolve);
+                // when a new node is selected, reset the error
+                listenTo("selectedNode", () => {
+                    resolve(undefined);
+                });
+            }
+        },
 
         // Component Tree data
         componentTree: DefineList,
         selectedNode: DefineMap,
 
         // ViewModel Editor data
-        viewModelData: DefineMap,
-        typeNamesData: DefineMap,
-        messages: DefineMap,
+        viewModelData: {
+            value({ listenTo, lastSet, resolve }) {
+                listenTo(lastSet, resolve);
+                // when a new node is selected, reset the data
+                listenTo("selectedNode", () => {
+                    resolve(new DefineMap({}) );
+                });
+            }
+        },
+        typeNamesData: {
+            value({ listenTo, lastSet, resolve }) {
+                listenTo(lastSet, resolve);
+                // when a new node is selected, reset the data
+                listenTo("selectedNode", () => {
+                    resolve(new DefineMap({}) );
+                });
+            }
+        },
+        messages: {
+            value({ listenTo, lastSet, resolve }) {
+                listenTo(lastSet, resolve);
+                // when a new node is selected, reset the data
+                listenTo("selectedNode", () => {
+                    resolve(new DefineMap({}) );
+                });
+            }
+        },
         expandedKeys: DefineList,
 
         // Breakpoints Panel data
-        breakpointsError: "string",
+        breakpointsError: {
+            value({ listenTo, lastSet, resolve }) {
+                listenTo(lastSet, resolve);
+                // when a new node is selected, reset the error
+                listenTo("selectedNode", () => {
+                    resolve(undefined);
+                });
+            }
+        },
         breakpoints: DefineList,
 
         // ViewModel Editor functions
