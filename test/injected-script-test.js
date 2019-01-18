@@ -766,6 +766,8 @@ describe("canjs-devtools-injected-script", () => {
             fixture.appendChild(appOne);
             fixture.appendChild(appTwo);
 
+            window.$0 = fixture.querySelector("a-nother-deep-child");
+
             const resp = devtools.getComponentTreeData();
             treeData = resp.detail.tree;
         });
@@ -777,40 +779,50 @@ describe("canjs-devtools-injected-script", () => {
 
         it("getComponentTreeData", () => {
             assert.deepEqual(treeData, [{
+                selected: false,
                 tagName: "a-pp",
                 id: 0,
                 children: [{
+                    selected: false,
                     tagName: "a-child",
                     id: 1,
                     children: [{
+                        selected: false,
                         tagName: "a-deep-child",
                         id: 2,
                         children: []
                     }]
                 }, {
+                    selected: false,
                     tagName: "a-nother-child",
                     id: 3,
                     children: [{
+                        selected: true,
                         tagName: "a-nother-deep-child",
                         id: 4,
                         children: []
                     }]
                 }]
             }, {
+                selected: false,
                 tagName: "a-pp",
                 id: 5,
                 children: [{
+                    selected: false,
                     tagName: "a-child",
                     id: 6,
                     children: [{
+                        selected: false,
                         tagName: "a-deep-child",
                         id: 7,
                         children: []
                     }]
                 }, {
+                    selected: false,
                     tagName: "a-nother-child",
                     id: 8,
                     children: [{
+                        selected: false,
                         tagName: "a-nother-deep-child",
                         id: 9,
                         children: []

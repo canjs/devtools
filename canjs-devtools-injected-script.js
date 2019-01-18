@@ -221,7 +221,10 @@
             }
 
             // cache componetTree so it can be used to find nodes by Id
-            componentTree = this.getComponentTreeDataForNode(document.body);
+            componentTree = this.getComponentTreeDataForNode(
+                document.body,
+                this.getNearestElementWithViewModel(window.$0)
+            );
 
             return this.makeSuccessResponse({
                 type: "componentTree",
@@ -323,6 +326,10 @@
          * helper methods
          */
         getNearestElementWithViewModel(el) {
+            if (!el) {
+                return undefined;
+            }
+
             const vm = el[viewModelSymbol];
             return vm ?
                     el :
@@ -458,7 +465,7 @@
             return tagName;
         },
 
-        getComponentTreeDataForNode(el) {
+        getComponentTreeDataForNode(el, selectedComponent) {
             let childList = [];
 
             const treeWalker = document.createTreeWalker(
@@ -478,7 +485,8 @@
                     let nodeData = {
                         tagName: node.tagName.toLowerCase(),
                         id: this.getNodeId(node),
-                        children: this.getComponentTreeDataForNode(node)
+                        children: this.getComponentTreeDataForNode(node, selectedComponent),
+                        selected: node === selectedComponent
                     };
                     // cache element so it can be retrieved later when
                     // a component is selected in component tree
@@ -486,7 +494,7 @@
                     childList.push(nodeData);
                 } else {
                     childList = childList.concat(
-                        this.getComponentTreeDataForNode(node)
+                        this.getComponentTreeDataForNode(node, selectedComponent)
                     );
                 }
                 node = treeWalker.nextSibling();
