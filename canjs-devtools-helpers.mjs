@@ -1,4 +1,4 @@
-window.CANJS_DEVTOOLS_HELPERS = {
+const helpers = {
     // URLs of all frames that have registered that they
     // have a global `can` present
     registeredFrames: {},
@@ -117,9 +117,13 @@ window.CANJS_DEVTOOLS_HELPERS = {
     }
 };
 
-// listen to messages from the injected-script
-chrome.runtime.onMessage.addListener(function(msg, sender) {
-    if (msg.type === "__CANJS_DEVTOOLS_UPDATE_FRAMES__") {
-        CANJS_DEVTOOLS_HELPERS.registeredFrames = msg.frames;
-    }
-});
+if (typeof chrome !== "undefined") {
+    // listen to messages from the injected-script
+    chrome.runtime.onMessage.addListener(function(msg, sender) {
+        if (msg.type === "__CANJS_DEVTOOLS_UPDATE_FRAMES__") {
+            helpers.registeredFrames = msg.frames;
+        }
+    });
+}
+
+export default helpers;

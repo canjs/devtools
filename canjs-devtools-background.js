@@ -3,7 +3,7 @@ var frames = {};
 (function updateFrameURLs() {
     var frameURLs = Object.keys(frames);
 
-    // send updated list of frames to canjs-devtools-helpers.js
+    // send updated list of frames to canjs-devtools-helpers.mjs
     chrome.runtime.sendMessage({
         type: "__CANJS_DEVTOOLS_UPDATE_FRAMES__",
         frames: frames

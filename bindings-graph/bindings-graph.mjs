@@ -31,7 +31,7 @@ Component.extend({
             var vm = this;
 
             var loadGraphData = function() {
-                window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
+                helpers.runDevtoolsFunction({
                     fnString: "getBindingsGraphData($0, '" + vm.selectedKey + "')",
                     success: function(result) {
                         var status = result.status;

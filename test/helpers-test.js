@@ -18,10 +18,9 @@ describe("canjs-devtools-helpers", () => {
         };
         window.chrome = chrome;
 
-        steal.import("canjs-devtools-helpers")
-            .then(() => {
-                // get access to devtools helpers functions
-                helpers = window.CANJS_DEVTOOLS_HELPERS;
+        steal.import("canjs-devtools-helpers.mjs")
+            .then((mod) => {
+                helpers = mod.default;
                 done();
             });
     });
@@ -75,7 +74,8 @@ describe("canjs-devtools-helpers", () => {
                 $0,
                 canReflect: Reflect,
                 canObservation: Observation,
-                canQueues: queues
+                canQueues: queues,
+                register() {}
             };
 
             // mock debugger so we can track when it is read
