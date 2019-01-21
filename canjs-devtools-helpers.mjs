@@ -66,20 +66,26 @@ const helpers = {
         };
     },
 
+    getObservationExpression(expression) {
+        return expression.replace(/(^|\s|=|>|<|!|\/|%|\+|-|\*|&|\(|\)|~|\?|,|\[|\])([A-Za-z_])/g, (match, delimiter, prop) => {
+            return `${delimiter}vm.${prop}`;
+        });
+    },
+
+    getDisplayExpression(expression) {
+        return expression.replace(/(^|\s|=|>|<|!|\/|%|\+|-|\*|&|\(|\)|~|\?|,|\[|\])([A-Za-z_])/g, (match, delimiter, prop) => {
+            return `${delimiter}\$\{vmName\}.${prop}`;
+        });
+    },
+
+    isBooleanExpression(expression) {
+        return /[!=<>]/.test(expression);
+    },
+
     getBreakpointEvalString(expression, debuggerStatement = "debugger") {
-        const prepExpression = (str, vmStr) => {
-            return str.replace(/(^|\s|=|>|<|!|\/|%|\+|-|\*|&|\(|\)|~|\?|,|\[|\])([A-Za-z_])/g, (match, delimiter, prop) => {
-                return `${delimiter}${vmStr}.${prop}`;
-            });
-        };
-
-        const isBoolean = (str) => {
-            return /[!=<>]/.test(str);
-        };
-
-        const realExpression = prepExpression(expression, "vm");
-        const displayExpression = prepExpression(expression, "${vmName}");
-        const isBooleanExpression = isBoolean(expression);
+        const realExpression = this.getObservationExpression(expression);
+        const displayExpression = this.getDisplayExpression(expression);
+        const isBooleanExpression = this.isBooleanExpression(expression);
 
         return `(function() {
         const Observation = window.__CANJS_DEVTOOLS__.canObservation;

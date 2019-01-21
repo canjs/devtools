@@ -177,4 +177,19 @@ describe("canjs-devtools-helpers", () => {
             assert.equal(breakpoint.error, "Please select a component in order to create a mutation breakpoint for its ViewModel");
         });
     });
+
+    it("getObservationExpression", () => {
+        [
+            [ "hobbies", "vm.hobbies" ],
+            [ "hobbies.length", "vm.hobbies.length" ],
+            [ "hobbies.length > 1", "vm.hobbies.length > 1" ],
+            [ "hobbies.length > counter", "vm.hobbies.length > vm.counter" ],
+        ].forEach(([ input, expected]) => {
+            assert.equal(
+                helpers.getObservationExpression(input),
+                expected,
+                `helpers.getObservationExpression(${input}) === ${expected}`
+            );
+        });
+    });
 });
