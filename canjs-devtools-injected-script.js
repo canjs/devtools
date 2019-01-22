@@ -102,14 +102,15 @@
             }
 
             const vm = elementWithViewModel[viewModelSymbol];
-            const { viewModel, namesByPath, messages } = this.getSerializedViewModelData(vm, options);
+            const { viewModel, namesByPath, messages, undefineds } = this.getSerializedViewModelData(vm, options);
 
             return this.makeSuccessResponse({
                 type: "viewModel",
                 tagName: this.getUniqueTagName(elementWithViewModel),
                 viewModel,
                 namesByPath,
-                messages
+                messages,
+                undefineds
             });
         },
 

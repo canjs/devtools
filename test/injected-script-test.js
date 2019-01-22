@@ -319,12 +319,13 @@ describe("canjs-devtools-injected-script", () => {
             );
         });
 
-        it("can handle nulls", () => {
+        it("can handle nulls and undefineds", () => {
             const C = Component.extend({
                 tag: "app-with-nulls",
                 view: "<p>hello</p>",
                 ViewModel: {
-                    thisIsNull: { default: null }
+                    thisIsNull: { default: null },
+                    thisIsUndefined: { default: undefined }
                 }
             });
 
@@ -334,13 +335,20 @@ describe("canjs-devtools-injected-script", () => {
             const {
                 viewModel,
                 namesByPath,
-                messages
+                messages,
+                undefineds
             } = devtools.getViewModelData(el).detail;
 
             assert.deepEqual(
                 viewModel,
-                { thisIsNull: null },
-                "gets null for property that is null"
+                { thisIsNull: null, thisIsUndefined: undefined },
+                "gets null for property that is null and undefined for property that is undefined"
+            );
+
+            assert.deepEqual(
+                undefineds,
+                [ "thisIsUndefined" ],
+                "gets undefineds array with paths whose value is `undefined`"
             );
 
             assert.deepEqual(
