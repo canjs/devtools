@@ -1,6 +1,6 @@
 import { Component, DefineMap, DefineList, Reflect } from "../node_modules/can-devtools-components/dist/viewmodel-editor.mjs";
 
-import helpers from "../canjs-devtools-herlps.mjs";
+import helpers from "../canjs-devtools-helpers.mjs";
 
 Component.extend({
     tag: "canjs-devtools-viewmodel-editor",
