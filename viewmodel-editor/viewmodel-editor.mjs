@@ -59,14 +59,14 @@ Component.extend({
                             if (vm.tagName !== detail.tagName) {
                                 vm.error = null;
                                 vm.tagName = detail.tagName;
-                                vm.viewModelData = detail.viewModel;
-                                vm.typeNamesData = detail.namesByPath;
+                                vm.viewModelData = detail.viewModelData;
+                                vm.typeNamesData = detail.typeNames;
                                 vm.messages = detail.messages;
                             } else {
                                 if (vm.viewModelData) {
-                                    if (detail.viewModel) {
-                                        Reflect.updateDeep(vm.viewModelData, detail.viewModel);
-                                        vm.typeNamesData = detail.namesByPath;
+                                    if (detail.viewModelData) {
+                                        Reflect.updateDeep(vm.viewModelData, detail.viewModelData);
+                                        vm.typeNamesData = detail.typeNames;
                                         vm.messages = detail.messages;
                                     } else {
                                         Reflect.deleteKeyValue(vm, "viewModelData");
@@ -74,7 +74,7 @@ Component.extend({
                                         Reflect.deleteKeyValue(vm, "messages");
                                     }
                                 } else {
-                                    Reflect.setKeyValue(vm, "viewModelData", detail.viewModel);
+                                    Reflect.setKeyValue(vm, "viewModelData", detail.viewModelData);
                                 }
                             }
                             break;

@@ -57,8 +57,8 @@ export default Component.extend({
                                 vm.error = detail;
                                 break;
                             case "success":
-                                Reflect.updateDeep(vm.viewModelData, detail.viewModel);
-                                vm.typeNamesData = detail.namesByPath;
+                                Reflect.updateDeep(vm.viewModelData, detail.viewModelData);
+                                vm.typeNamesData = detail.typeNames;
                                 vm.messages = detail.messages;
                                 break;
                         }
