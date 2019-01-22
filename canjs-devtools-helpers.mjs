@@ -66,9 +66,26 @@ const helpers = {
         };
     },
 
+    getSafeKey(key, prependStr) {
+        var parts = key.split(".");
+        let last = "";
+
+        const safeParts = parts.reduce((newParts, key) => {
+            last = last ? `${last}.${key}` : `${prependStr}.${key}`;
+            newParts.push(last);
+            return newParts;
+        }, []);
+
+        if (parts.length > 1) {
+            return `(${safeParts.join(" && ")})`;
+        } else {
+            return safeParts.join(" && ");
+        }
+    },
+
     getObservationExpression(expression) {
-        return expression.replace(/(^|\s|=|>|<|!|\/|%|\+|-|\*|&|\(|\)|~|\?|,|\[|\])([A-Za-z_])/g, (match, delimiter, prop) => {
-            return `${delimiter}vm.${prop}`;
+        return expression.replace(/(^|\s|=|>|<|!|\/|%|\+|-|\*|&|\(|\)|~|\?|,|\[|\])([A-Za-z_:.]*)/g, (match, delimiter, key) => {
+            return `${delimiter}${key ? this.getSafeKey(key, "vm") : ""}`;
         });
     },
 
@@ -101,8 +118,9 @@ const helpers = {
         const observation = new Observation(() => {
             return ${realExpression};
         });
+        const origDependencyChange = observation.dependencyChange;
 
-        observation.dependencyChange = () => {
+        observation.dependencyChange = function() {
             const newValue = ${realExpression};
             ${ isBooleanExpression ?
             `if (newValue == true && oldValue != true) {
@@ -113,6 +131,8 @@ const helpers = {
             ${debuggerStatement};`
             }
             oldValue = newValue;
+
+            return origDependencyChange.apply(this, arguments);
         };
 
         return {
