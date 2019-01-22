@@ -1,5 +1,7 @@
 import { Component, DefineList } from "../node_modules/can-devtools-components/dist/queues-logstack.mjs";
 
+import helpers from "../canjs-devtools-helpers.mjs";
+
 Component.extend({
     tag: "canjs-devtools-queues-stack",
 
@@ -20,7 +22,7 @@ Component.extend({
         activeFrame: "string",
 
         inspectTask(taskIndex) {
-            window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
+            helpers.runDevtoolsFunction({
                 fnString: "inspectTask(" + taskIndex + ")"
             });
         },
@@ -28,7 +30,7 @@ Component.extend({
         connectedCallback() {
             var vm = this;
 
-            var stopRefreshing = window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
+            var stopRefreshing = helpers.runDevtoolsFunction({
                 fnString: "queuesStack()",
                 refreshInterval: 100,
                 success: function(result) {

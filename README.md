@@ -65,9 +65,9 @@ This is loaded through a `<script>` tag in `index.html`. It creates the sidebar 
 
 ### Sidebars - viewmodel-editor.js, bindings-graph.js, queues-stack.js
 
-These are the UI of the sidebar panels. They retrieve data from the users page by calling functions on the `__CANJS_DEVTOOLS__` object through the `canjs-devtools-helpers.js` helper.
+These are the UI of the sidebar panels. They retrieve data from the users page by calling functions on the `__CANJS_DEVTOOLS__` object through the `canjs-devtools-helpers.mjs` helper.
 
-### canjs-devtools-helpers.js
+### canjs-devtools-helpers.mjs
 
 This contains a helper used by the sidebars for running functions in _each_ of the frames that have CanJS. This uses ` chrome.devtools.inspectedWindow.eval`.
 

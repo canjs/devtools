@@ -1,3 +1,5 @@
+import helpers from "./canjs-devtools-helpers.mjs";
+
 function initializePanel() {
     chrome.devtools.panels.create(
         "CanJS",
@@ -17,7 +19,7 @@ function initializeSidebar(name, location, page, height) {
 }
 
 (function initializeDevtools() {
-    var registeredFrames = window.CANJS_DEVTOOLS_HELPERS.registeredFrames;
+    var registeredFrames = helpers.registeredFrames;
     var frameURLs = Object.keys(registeredFrames);
 
     if (frameURLs.length) {

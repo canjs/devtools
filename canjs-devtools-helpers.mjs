@@ -1,4 +1,4 @@
-window.CANJS_DEVTOOLS_HELPERS = {
+const helpers = {
     // URLs of all frames that have registered that they
     // have a global `can` present
     registeredFrames: {},
@@ -66,20 +66,43 @@ window.CANJS_DEVTOOLS_HELPERS = {
         };
     },
 
+    getSafeKey(key, prependStr) {
+        var parts = key.split(".");
+        let last = "";
+
+        const safeParts = parts.reduce((newParts, key) => {
+            last = last ? `${last}.${key}` : `${prependStr}.${key}`;
+            newParts.push(last);
+            return newParts;
+        }, []);
+
+        if (parts.length > 1) {
+            return `(${safeParts.join(" && ")})`;
+        } else {
+            return safeParts.join(" && ");
+        }
+    },
+
+    getObservationExpression(expression) {
+        return expression.replace(/(^|\s|=|>|<|!|\/|%|\+|-|\*|&|\(|\)|~|\?|,|\[|\])([A-Za-z_:.]*)/g, (match, delimiter, key) => {
+            return `${delimiter}${key ? this.getSafeKey(key, "vm") : ""}`;
+        });
+    },
+
+    getDisplayExpression(expression) {
+        return expression.replace(/(^|\s|=|>|<|!|\/|%|\+|-|\*|&|\(|\)|~|\?|,|\[|\])([A-Za-z_])/g, (match, delimiter, prop) => {
+            return `${delimiter}\$\{vmName\}.${prop}`;
+        });
+    },
+
+    isBooleanExpression(expression) {
+        return /[!=<>]/.test(expression);
+    },
+
     getBreakpointEvalString(expression, debuggerStatement = "debugger") {
-        const prepExpression = (str, vmStr) => {
-            return str.replace(/(^|\s|=|>|<|!|\/|%|\+|-|\*|&|\(|\)|~|\?|,|\[|\])([A-Za-z_])/g, (match, delimiter, prop) => {
-                return `${delimiter}${vmStr}.${prop}`;
-            });
-        };
-
-        const isBoolean = (str) => {
-            return /[!=<>]/.test(str);
-        };
-
-        const realExpression = prepExpression(expression, "vm");
-        const displayExpression = prepExpression(expression, "${vmName}");
-        const isBooleanExpression = isBoolean(expression);
+        const realExpression = this.getObservationExpression(expression);
+        const displayExpression = this.getDisplayExpression(expression);
+        const isBooleanExpression = this.isBooleanExpression(expression);
 
         return `(function() {
         const Observation = window.__CANJS_DEVTOOLS__.canObservation;
@@ -95,8 +118,9 @@ window.CANJS_DEVTOOLS_HELPERS = {
         const observation = new Observation(() => {
             return ${realExpression};
         });
+        const origDependencyChange = observation.dependencyChange;
 
-        observation.dependencyChange = () => {
+        observation.dependencyChange = function() {
             const newValue = ${realExpression};
             ${ isBooleanExpression ?
             `if (newValue == true && oldValue != true) {
@@ -107,6 +131,8 @@ window.CANJS_DEVTOOLS_HELPERS = {
             ${debuggerStatement};`
             }
             oldValue = newValue;
+
+            return origDependencyChange.apply(this, arguments);
         };
 
         return {
@@ -117,9 +143,13 @@ window.CANJS_DEVTOOLS_HELPERS = {
     }
 };
 
-// listen to messages from the injected-script
-chrome.runtime.onMessage.addListener(function(msg, sender) {
-    if (msg.type === "__CANJS_DEVTOOLS_UPDATE_FRAMES__") {
-        CANJS_DEVTOOLS_HELPERS.registeredFrames = msg.frames;
-    }
-});
+if (typeof chrome !== "undefined") {
+    // listen to messages from the injected-script
+    chrome.runtime.onMessage.addListener(function(msg, sender) {
+        if (msg.type === "__CANJS_DEVTOOLS_UPDATE_FRAMES__") {
+            helpers.registeredFrames = msg.frames;
+        }
+    });
+}
+
+export default helpers;

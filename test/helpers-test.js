@@ -18,10 +18,9 @@ describe("canjs-devtools-helpers", () => {
         };
         window.chrome = chrome;
 
-        steal.import("canjs-devtools-helpers")
-            .then(() => {
-                // get access to devtools helpers functions
-                helpers = window.CANJS_DEVTOOLS_HELPERS;
+        steal.import("canjs-devtools-helpers.mjs")
+            .then((mod) => {
+                helpers = mod.default;
                 done();
             });
     });
@@ -75,7 +74,8 @@ describe("canjs-devtools-helpers", () => {
                 $0,
                 canReflect: Reflect,
                 canObservation: Observation,
-                canQueues: queues
+                canQueues: queues,
+                register() {}
             };
 
             // mock debugger so we can track when it is read
@@ -175,6 +175,46 @@ describe("canjs-devtools-helpers", () => {
             let breakpoint = eval( str );
 
             assert.equal(breakpoint.error, "Please select a component in order to create a mutation breakpoint for its ViewModel");
+        });
+
+        it("hobbies.length works when hobbies does not exist", () => {
+            let devtoolsVM = new (DefineMap.extend("DevtoolsVM", {
+                hobbies: { Type: DefineList }
+            }));
+
+            $0.viewModel = devtoolsVM;
+
+            let str = helpers.getBreakpointEvalString("hobbies.length", "mock._debugger");
+            let breakpoint = eval( str );
+
+            assert.equal(breakpoint.expression, "DevtoolsVM{}.hobbies.length");
+            assert.equal(Reflect.getValue(breakpoint.observation), undefined, "obs === undefined");
+
+            Reflect.onValue(breakpoint.observation, () => {});
+
+            devtoolsVM.hobbies = [];
+            assert.equal(debuggerHitCount, 1, "debugger hit once");
+
+            devtoolsVM.hobbies.push("skiing");
+            assert.equal(debuggerHitCount, 2, "debugger hit again");
+
+            devtoolsVM.hobbies = [ "dancing" ];
+            assert.equal(debuggerHitCount, 3, "debugger hit when list changes to new list of same length");
+        });
+    });
+
+    it("getObservationExpression", () => {
+        [
+            [ "hobbies", "vm.hobbies" ],
+            [ "hobbies.length", "(vm.hobbies && vm.hobbies.length)" ],
+            [ "hobbies.length > 1", "(vm.hobbies && vm.hobbies.length) > 1" ],
+            [ "hobbies.length > counter", "(vm.hobbies && vm.hobbies.length) > vm.counter" ],
+        ].forEach(([ input, expected]) => {
+            assert.equal(
+                helpers.getObservationExpression(input),
+                expected,
+                `helpers.getObservationExpression(${input}) === ${expected}`
+            );
         });
     });
 });

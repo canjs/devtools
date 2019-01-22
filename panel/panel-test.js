@@ -1,20 +1,22 @@
 import mocha from "steal-mocha";
 import chai from "chai/chai";
 
+import helpers from "../canjs-devtools-helpers.mjs";
+
 import Panel from "./panel.mjs";
 const PanelVM = Panel.ViewModel;
 
 const assert = chai.assert;
 
 describe("canjs-devtools-panel", () => {
+    let origRunDevtoolsFunction = helpers.runDevtoolsFunction;
+
     beforeEach(() => {
-        window.CANJS_DEVTOOLS_HELPERS = {
-            runDevtoolsFunction() {}
-        };
+        helpers.runDevtoolsFunction = () => {};
     });
 
     afterEach(() => {
-        delete window.CANJS_DEVTOOLS_HELPERS;
+        helpers.runDevtoolsFunction = origRunDevtoolsFunction;
     });
 
     it("error", () => {

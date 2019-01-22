@@ -1,5 +1,7 @@
 import { Component, DefineMap, DefineList, Reflect } from "../node_modules/can-devtools-components/dist/panel.mjs";
 
+import helpers from "../canjs-devtools-helpers.mjs";
+
 export default Component.extend({
     tag: "canjs-devtools-panel",
 
@@ -30,14 +32,14 @@ export default Component.extend({
             let stopRefreshingViewModelData = () => {};
 
             vm.listenTo("selectedNode", (ev, node) => {
-                window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
+                helpers.runDevtoolsFunction({
                     fnString: `selectComponentById(${node.id})`
                 });
 
                 // teardown old polling
                 stopRefreshingViewModelData();
 
-                stopRefreshingViewModelData = window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
+                stopRefreshingViewModelData = helpers.runDevtoolsFunction({
                     fn: () => {
                         return "getViewModelData(__CANJS_DEVTOOLS__.$0, { expandedKeys: [ '" +
                                     this.expandedKeys.serialize().join("', '") +
@@ -64,7 +66,7 @@ export default Component.extend({
                 });
             });
 
-            const stopRefreshingComponentTree = window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
+            const stopRefreshingComponentTree = helpers.runDevtoolsFunction({
                 fnString: "getComponentTreeData()",
                 refreshInterval: 2000,
                 success(result) {
@@ -85,7 +87,7 @@ export default Component.extend({
             });
 
             // get initial breakpoints
-            window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
+            helpers.runDevtoolsFunction({
                 fnString: "getBreakpoints()",
                 success(result) {
                     const status = result.status;
@@ -162,7 +164,7 @@ export default Component.extend({
 
         // ViewModel Editor functions
         updateValues(data) {
-            window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
+            helpers.runDevtoolsFunction({
                 fnString: "updateViewModel(__CANJS_DEVTOOLS__.$0, " + JSON.stringify(data) + ")"
             });
         },
@@ -171,9 +173,9 @@ export default Component.extend({
         addBreakpoint(expression) {
             const vm = this;
 
-            window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
+            helpers.runDevtoolsFunction({
                 fnString: `addBreakpoint(
-    ${ window.CANJS_DEVTOOLS_HELPERS.getBreakpointEvalString(expression) }
+    ${ helpers.getBreakpointEvalString(expression) }
 )`,
                 success(result) {
                     const status = result.status;
@@ -194,7 +196,7 @@ export default Component.extend({
         toggleBreakpoint(breakpoint) {
             const vm = this;
 
-            window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
+            helpers.runDevtoolsFunction({
                 fnString: `toggleBreakpoint( ${breakpoint.id} )`,
                 success(result) {
                     const status = result.status;
@@ -210,7 +212,7 @@ export default Component.extend({
         deleteBreakpoint(breakpoint) {
             const vm = this;
 
-            window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
+            helpers.runDevtoolsFunction({
                 fnString: `deleteBreakpoint( ${breakpoint.id} )`,
                 success(result) {
                     const status = result.status;

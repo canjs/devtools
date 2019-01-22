@@ -1,5 +1,7 @@
 import { Component, DefineMap, DefineList, Reflect } from "../node_modules/can-devtools-components/dist/viewmodel-editor.mjs";
 
+import helpers from "../canjs-devtools-herlps.mjs";
+
 Component.extend({
     tag: "canjs-devtools-viewmodel-editor",
 
@@ -27,7 +29,7 @@ Component.extend({
         expandedKeys: DefineList,
 
         updateValues: function(data) {
-            window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
+            helpers.runDevtoolsFunction({
                 fnString: "updateViewModel($0, " + JSON.stringify(data) + ")"
             });
         },
@@ -35,7 +37,7 @@ Component.extend({
         connectedCallback() {
             var vm = this;
 
-            var stopRefreshing = window.CANJS_DEVTOOLS_HELPERS.runDevtoolsFunction({
+            var stopRefreshing = helpers.runDevtoolsFunction({
                 fn: () => {
                     return "getViewModelData($0, { expandedKeys: [ '" +
                                 (vm.expandedKeys ? vm.expandedKeys.serialize().join("', '") : "")+
