@@ -343,6 +343,7 @@
             const viewModelData = {};
             const namesByPath = {};
             const messages = {};
+            const undefineds = [];
 
             if (viewModelKeys.length === 0) {
                 const type = canReflect.isObservableLike(viewModel) ?
@@ -385,6 +386,10 @@
                     continue;
                 }
 
+                if (value === undefined) {
+                    undefineds.push(path);
+                }
+
                 if (typeof value === "object") {
                     viewModelData[key] = {};
                     namesByPath[path] = canReflect.getName(value);
@@ -402,12 +407,14 @@
                         let {
                             viewModel: childViewModel,
                             namesByPath: childNamesByPath,
-                            messages: childMessages
+                            messages: childMessages,
+                            undefineds: childUndefineds
                         } = this.getSerializedViewModelData(value, { expandedKeys }, path );
 
                         viewModelData[key] = childViewModel;
                         Object.assign(namesByPath, childNamesByPath);
                         Object.assign(messages, childMessages);
+                        undefineds.splice(undefineds.length, 0, ...childUndefineds);
                     }
                 } else {
                     viewModelData[key] = value;
@@ -417,7 +424,8 @@
             return {
                 viewModel: viewModelData,
                 namesByPath,
-                messages
+                messages,
+                undefineds
             };
         },
 
