@@ -1,6 +1,6 @@
 import { Component, DefineMap, DefineList, Reflect } from "../node_modules/can-devtools-components/dist/viewmodel-editor.mjs";
 
-import helpers from "../canjs-devtools-herlps.mjs";
+import helpers from "../canjs-devtools-helpers.mjs";
 
 Component.extend({
     tag: "canjs-devtools-viewmodel-editor",
@@ -14,6 +14,7 @@ Component.extend({
                 viewModelData:from="viewModelData"
                 typeNamesData:from="typeNamesData"
                 messages:from="messages"
+                undefineds:from="undefineds"
                 updateValues:from="updateValues"
                 expandedKeys:to="expandedKeys"
             ></viewmodel-editor>
@@ -26,6 +27,7 @@ Component.extend({
         viewModelData: DefineMap,
         typeNamesData: DefineMap,
         messages: DefineMap,
+        undefineds: DefineList,
         expandedKeys: DefineList,
 
         updateValues: function(data) {
@@ -59,22 +61,25 @@ Component.extend({
                             if (vm.tagName !== detail.tagName) {
                                 vm.error = null;
                                 vm.tagName = detail.tagName;
-                                vm.viewModelData = detail.viewModel;
-                                vm.typeNamesData = detail.namesByPath;
+                                vm.viewModelData = detail.viewModelData;
+                                vm.typeNamesData = detail.typeNames;
                                 vm.messages = detail.messages;
+                                vm.undefineds = detail.undefineds;
                             } else {
                                 if (vm.viewModelData) {
-                                    if (detail.viewModel) {
-                                        Reflect.updateDeep(vm.viewModelData, detail.viewModel);
-                                        vm.typeNamesData = detail.namesByPath;
+                                    if (detail.viewModelData) {
+                                        Reflect.updateDeep(vm.viewModelData, detail.viewModelData);
+                                        vm.typeNamesData = detail.typeNames;
                                         vm.messages = detail.messages;
+                                        vm.undefineds = detail.undefineds;
                                     } else {
                                         Reflect.deleteKeyValue(vm, "viewModelData");
                                         Reflect.deleteKeyValue(vm, "typeNamesData");
                                         Reflect.deleteKeyValue(vm, "messages");
+                                        Reflect.deleteKeyValue(vm, "undefineds");
                                     }
                                 } else {
-                                    Reflect.setKeyValue(vm, "viewModelData", detail.viewModel);
+                                    Reflect.setKeyValue(vm, "viewModelData", detail.viewModelData);
                                 }
                             }
                             break;

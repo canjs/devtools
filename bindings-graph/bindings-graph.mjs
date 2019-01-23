@@ -1,5 +1,7 @@
 import { Component, DefineMap, DefineList } from "../node_modules/can-devtools-components/dist/bindings-graph.mjs";
 
+import helpers from "../canjs-devtools-helpers.mjs";
+
 Component.extend({
     tag: "canjs-devtools-bindings-graph",
 

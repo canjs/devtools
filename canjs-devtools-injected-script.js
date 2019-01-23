@@ -101,15 +101,15 @@
                 return this.makeIgnoreResponse("&lt;" + el.tagName.toLowerCase() + "&gt; does not have a viewModel");
             }
 
-            const vm = elementWithViewModel[viewModelSymbol];
-            const { viewModel, namesByPath, messages } = this.getSerializedViewModelData(vm, options);
+            const viewModel = elementWithViewModel[viewModelSymbol];
+            const { viewModelData, typeNames, messages, undefineds } = this.getSerializedViewModelData(viewModel, options);
 
             return this.makeSuccessResponse({
-                type: "viewModel",
                 tagName: this.getUniqueTagName(elementWithViewModel),
-                viewModel,
-                namesByPath,
-                messages
+                viewModelData,
+                typeNames,
+                messages,
+                undefineds
             });
         },
 
@@ -227,7 +227,6 @@
             );
 
             return this.makeSuccessResponse({
-                type: "componentTree",
                 tree: componentTree
             });
         },
@@ -330,8 +329,8 @@
                 return undefined;
             }
 
-            const vm = el[viewModelSymbol];
-            return vm ?
+            const viewModel = el[viewModelSymbol];
+            return viewModel ?
                     el :
                     el.parentNode ?
                         this.getNearestElementWithViewModel(el.parentNode) :
@@ -341,8 +340,9 @@
         getSerializedViewModelData(viewModel, { expandedKeys = [] } = {}, parentPath = "") {
             const viewModelKeys = this.getViewModelKeys(viewModel);
             const viewModelData = {};
-            const namesByPath = {};
+            const typeNames = {};
             const messages = {};
+            const undefineds = [];
 
             if (viewModelKeys.length === 0) {
                 const type = canReflect.isObservableLike(viewModel) ?
@@ -372,7 +372,7 @@
                 // don't serialize functions
                 if (typeof value === "function") {
                     viewModelData[key] = {};
-                    namesByPath[path] = "function";
+                    typeNames[path] = "function";
                     messages[path] = {
                         type: "info",
                         message: value.toString()
@@ -385,9 +385,13 @@
                     continue;
                 }
 
+                if (value === undefined) {
+                    undefineds.push(path);
+                }
+
                 if (typeof value === "object") {
                     viewModelData[key] = {};
-                    namesByPath[path] = canReflect.getName(value);
+                    typeNames[path] = canReflect.getName(value);
 
                     if (value instanceof Element) {
                         messages[path] = {
@@ -400,14 +404,16 @@
                     // get serialized data for children of expanded keys
                     if (expandedKeys.indexOf(path) !== -1) {
                         let {
-                            viewModel: childViewModel,
-                            namesByPath: childNamesByPath,
-                            messages: childMessages
+                            viewModelData: childViewModelData,
+                            typeNames: childNames,
+                            messages: childMessages,
+                            undefineds: childUndefineds
                         } = this.getSerializedViewModelData(value, { expandedKeys }, path );
 
-                        viewModelData[key] = childViewModel;
-                        Object.assign(namesByPath, childNamesByPath);
+                        viewModelData[key] = childViewModelData;
+                        Object.assign(typeNames, childNames);
                         Object.assign(messages, childMessages);
+                        undefineds.splice(undefineds.length, 0, ...childUndefineds);
                     }
                 } else {
                     viewModelData[key] = value;
@@ -415,9 +421,10 @@
             }
 
             return {
-                viewModel: viewModelData,
-                namesByPath,
-                messages
+                viewModelData,
+                typeNames,
+                messages,
+                undefineds
             };
         },
 

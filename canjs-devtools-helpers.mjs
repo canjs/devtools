@@ -143,7 +143,7 @@ const helpers = {
     }
 };
 
-if (typeof chrome !== "undefined") {
+if (typeof chrome === "object" && chrome.runtime && chrome.runtime.onMessage) {
     // listen to messages from the injected-script
     chrome.runtime.onMessage.addListener(function(msg, sender) {
         if (msg.type === "__CANJS_DEVTOOLS_UPDATE_FRAMES__") {

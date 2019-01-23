@@ -83,4 +83,17 @@ describe("canjs-devtools-panel", () => {
         vm.selectedNode = {};
         assert.deepEqual(vm.messages.serialize(), {}, "messages is reset when a node is selected");
     });
+
+    it("undefineds", () => {
+        const vm = new PanelVM();
+        vm.listenTo("undefineds", () => {});
+
+        assert.equal(vm.undefineds, undefined, "no undefineds by default");
+
+        vm.undefineds = [ "foo", "bar" ];
+        assert.deepEqual(vm.undefineds.serialize(), [ "foo", "bar" ], "undefineds can be set");
+
+        vm.selectedNode = {};
+        assert.deepEqual(vm.undefineds.serialize(), [], "undefineds is reset when a node is selected");
+    });
 });

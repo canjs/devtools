@@ -45,50 +45,48 @@ describe("canjs-devtools-injected-script", () => {
             const el = c.element;
 
             const {
-                viewModel: viewModelFromEl,
+                viewModelData: viewModelDataFromEl,
                 tagName: tagNameFromEl,
                 type: typeFromEl,
-                namesByPath: namesByPathFromEl
+                typeNames: typeNamesFromEl
             } = devtools.getViewModelData(el).detail;
 
-            assert.equal(typeFromEl, "viewModel", "type from el");
             assert.equal(tagNameFromEl, "<a-pp>", "tagName from el");
             assert.deepEqual(
-                viewModelFromEl,
+                viewModelDataFromEl,
                 { first: "Kevin", last: "McCallister", name: "Kevin McCallister" },
-                "viewModel from el"
+                "viewModelData from el"
             );
             assert.deepEqual(
-                namesByPathFromEl,
+                typeNamesFromEl,
                 {},
-                "namesByPath from el"
+                "typeNames from el"
             );
 
             const {
-                viewModel: viewModelFromChild,
+                viewModelData: viewModelDataFromChild,
                 tagName: tagNameFromChild,
                 type: typeFromChild,
-                namesByPath: namesByPathFromChild
+                typeNames: typeNamesFromChild
             } = devtools.getViewModelData(el.querySelector("p")).detail;
 
-            assert.equal(typeFromChild, "viewModel", "type from child of el");
             assert.equal(tagNameFromChild, "<a-pp>", "tagName from child of el");
             assert.deepEqual(
-                viewModelFromChild,
+                viewModelDataFromChild,
                 { first: "Kevin", last: "McCallister", name: "Kevin McCallister" },
-                "viewModel from child of el"
+                "viewModelData from child of el"
             );
             assert.deepEqual(
-                namesByPathFromChild,
+                typeNamesFromChild,
                 {},
-                "namesByPath from child of el"
+                "typeNames from child of el"
             );
         });
 
         it("can handle elements", () => {
             const C = Component.extend({
                 tag: "app-with-element",
-                view: "<p>this app has an element on its viewModel</p>",
+                view: "<p>this app has an element on its viewModelData</p>",
                 ViewModel: {
                     element: {
                         default() {
@@ -102,19 +100,19 @@ describe("canjs-devtools-injected-script", () => {
             const el = c.element;
 
             const {
-                viewModel,
-                namesByPath,
+                viewModelData,
+                typeNames,
                 messages
             } = devtools.getViewModelData(el).detail;
 
             assert.deepEqual(
-                viewModel,
+                viewModelData,
                 { element: {} },
-                "gets correct viewModel data"
+                "gets correct viewModelData data"
             );
 
             assert.deepEqual(
-                namesByPath,
+                typeNames,
                 { element: "HTMLParagraphElement{}" },
                 "gets correct name data"
             );
@@ -146,19 +144,19 @@ describe("canjs-devtools-injected-script", () => {
             const el = c.element;
 
             const {
-                viewModel,
-                namesByPath,
+                viewModelData,
+                typeNames,
                 messages
             } = devtools.getViewModelData(el).detail;
 
             assert.deepEqual(
-                viewModel,
+                viewModelData,
                 { elements: { } },
-                "gets correct viewModel data - unexpanded"
+                "gets correct viewModelData data - unexpanded"
             );
 
             assert.deepEqual(
-                namesByPath,
+                typeNames,
                 { elements: "DefineList[]" },
                 "gets correct name data - unexpanded"
             );
@@ -170,19 +168,19 @@ describe("canjs-devtools-injected-script", () => {
             );
 
             const {
-                viewModel: viewModelListExpanded,
-                namesByPath: namesByPathListExpanded,
+                viewModelData: viewModelDataListExpanded,
+                typeNames: typeNamesListExpanded,
                 messages: messagesListExpanded
             } = devtools.getViewModelData(el, { expandedKeys: [ "elements" ] }).detail;
 
             assert.deepEqual(
-                viewModelListExpanded,
+                viewModelDataListExpanded,
                 { elements: { 0: { }, 1: { } } },
-                "gets correct viewModel data - list expanded"
+                "gets correct viewModelData data - list expanded"
             );
 
             assert.deepEqual(
-                namesByPathListExpanded,
+                typeNamesListExpanded,
                 {
                     elements: "DefineList[]",
                     "elements.0": "HTMLParagraphElement{}",
@@ -216,19 +214,19 @@ describe("canjs-devtools-injected-script", () => {
             const el = c.element;
 
             const {
-                viewModel,
-                namesByPath,
+                viewModelData,
+                typeNames,
                 messages
             } = devtools.getViewModelData(el).detail;
 
             assert.deepEqual(
-                viewModel,
+                viewModelData,
                 { Thing: { } },
                 "shows an empty object for function so it can be expanded to show function source"
             );
 
             assert.deepEqual(
-                namesByPath,
+                typeNames,
                 { Thing: "function" },
                 "shows correct name for function"
             );
@@ -258,19 +256,19 @@ describe("canjs-devtools-injected-script", () => {
             const el = c.element;
 
             const {
-                viewModel,
-                namesByPath,
+                viewModelData,
+                typeNames,
                 messages
             } = devtools.getViewModelData(el).detail;
 
             assert.deepEqual(
-                viewModel,
+                viewModelData,
                 { circular: { } },
                 "gets empty object for circular property"
             );
 
             assert.deepEqual(
-                namesByPath,
+                typeNames,
                 { circular: "Object{}" },
                 "gets correct name for circular property"
             );
@@ -302,29 +300,30 @@ describe("canjs-devtools-injected-script", () => {
             const el = c.element;
 
             const {
-                viewModel,
-                namesByPath
+                viewModelData,
+                typeNames
             } = devtools.getViewModelData(el).detail;
 
             assert.deepEqual(
-                viewModel,
+                viewModelData,
                 { thing: { } },
                 "gets empty object for recursive property"
             );
 
             assert.deepEqual(
-                namesByPath,
+                typeNames,
                 { thing: "Thing{}" },
                 "gets correct name"
             );
         });
 
-        it("can handle nulls", () => {
+        it("can handle nulls and undefineds", () => {
             const C = Component.extend({
                 tag: "app-with-nulls",
                 view: "<p>hello</p>",
                 ViewModel: {
-                    thisIsNull: { default: null }
+                    thisIsNull: { default: null },
+                    thisIsUndefined: { default: undefined }
                 }
             });
 
@@ -332,15 +331,22 @@ describe("canjs-devtools-injected-script", () => {
             const el = c.element;
 
             const {
-                viewModel,
-                namesByPath,
-                messages
+                viewModelData,
+                typeNames,
+                messages,
+                undefineds
             } = devtools.getViewModelData(el).detail;
 
             assert.deepEqual(
-                viewModel,
-                { thisIsNull: null },
-                "gets null for property that is null"
+                viewModelData,
+                { thisIsNull: null, thisIsUndefined: undefined },
+                "gets null for property that is null and undefined for property that is undefined"
+            );
+
+            assert.deepEqual(
+                undefineds,
+                [ "thisIsUndefined" ],
+                "gets undefineds array with paths whose value is `undefined`"
             );
 
             assert.deepEqual(
@@ -376,31 +382,31 @@ describe("canjs-devtools-injected-script", () => {
             const el = c.element;
 
             const {
-                viewModel,
-                namesByPath,
+                viewModelData,
+                typeNames,
                 messages
             } = devtools.getViewModelData(el, { expandedKeys: [ "emptyMap", "emptyList", "emptyObject", "emptyArray" ] }).detail;
 
             assert.deepEqual(
-                viewModel,
+                viewModelData,
                 {
                     emptyMap: {},
                     emptyList: {},
                     emptyObject: {},
                     emptyArray: {}
                 },
-                "viewModel properties are correct"
+                "viewModelData properties are correct"
             );
 
             assert.deepEqual(
-                namesByPath,
+                typeNames,
                 {
                     emptyMap: "DefineMap{}",
                     emptyList: "DefineList[]",
                     emptyObject: "Object{}",
                     emptyArray: "Array[]"
                 },
-                "names are correct"
+                "typeNames are correct"
             );
 
             assert.deepEqual(
@@ -440,164 +446,192 @@ describe("canjs-devtools-injected-script", () => {
 
     });
 
-    it("getSerializedViewModelData - viewModel", () => {
-        let VM = DefineMap.extend({
-            name: "string"
-        });
+    describe("getSerializedViewModelData", () => {
+        it("viewModelData", () => {
+            let VM = DefineMap.extend({
+                name: "string"
+            });
 
-        assert.deepEqual(
-            devtools.getSerializedViewModelData(new VM()).viewModel,
-            { name: undefined },
-            "works for basic ViewModel"
-        );
+            assert.deepEqual(
+                devtools.getSerializedViewModelData(new VM()).viewModelData,
+                { name: undefined },
+                "works for basic ViewModel"
+            );
 
-        VM = DefineMap.extend({
-            first: { type: "string", default: "Kevin" },
-            last: { type: "string", default: "McCallister" },
-            get name() {
-                return this.first + " " + this.last;
-            }
-        });
-
-        assert.deepEqual(
-            devtools.getSerializedViewModelData(new VM()).viewModel,
-            { first: "Kevin", last: "McCallister", name: "Kevin McCallister" },
-            "works for ViewModel with serialized properties"
-        );
-
-        VM = DefineMap.extend({
-            hobbies: {
-                default() {
-                    return [{ name: "singing" }, { name: "dancing" }];
+            VM = DefineMap.extend({
+                first: { type: "string", default: "Kevin" },
+                last: { type: "string", default: "McCallister" },
+                get name() {
+                    return this.first + " " + this.last;
                 }
-            }
-        });
+            });
 
-        assert.deepEqual(
-            devtools.getSerializedViewModelData(new VM()).viewModel,
-            { hobbies: { } },
-            "works for DefineMap with nested array - unexpanded"
-        );
+            assert.deepEqual(
+                devtools.getSerializedViewModelData(new VM()).viewModelData,
+                { first: "Kevin", last: "McCallister", name: "Kevin McCallister" },
+                "works for ViewModel with serialized properties"
+            );
 
-        assert.deepEqual(
-            devtools.getSerializedViewModelData(new VM(), { expandedKeys: [ "hobbies" ] }).viewModel,
-            { hobbies: { 0: { }, 1: { } } },
-            "works for DefineMap with nested array - array expanded"
-        );
-
-        assert.deepEqual(
-            devtools.getSerializedViewModelData(new VM(), { expandedKeys: [ "hobbies", "hobbies.0", "hobbies.1" ] }).viewModel,
-            { hobbies: { 0: { name: "singing" }, 1: { name: "dancing" } } },
-            "works for DefineMap with nested array - all expanded"
-        );
-
-        VM = DefineMap.extend({
-            hobbies: {
-                Type: DefineList.extend("Hobbies", {
-                    "#": DefineMap.extend("Hobby", {
-                        name: "string"
-                    })
-                }),
-                default() {
-                    return [{ name: "singing" }, { name: "dancing" }];
+            VM = DefineMap.extend({
+                hobbies: {
+                    default() {
+                        return [{ name: "singing" }, { name: "dancing" }];
+                    }
                 }
-            }
+            });
+
+            assert.deepEqual(
+                devtools.getSerializedViewModelData(new VM()).viewModelData,
+                { hobbies: { } },
+                "works for DefineMap with nested array - unexpanded"
+            );
+
+            assert.deepEqual(
+                devtools.getSerializedViewModelData(new VM(), { expandedKeys: [ "hobbies" ] }).viewModelData,
+                { hobbies: { 0: { }, 1: { } } },
+                "works for DefineMap with nested array - array expanded"
+            );
+
+            assert.deepEqual(
+                devtools.getSerializedViewModelData(new VM(), { expandedKeys: [ "hobbies", "hobbies.0", "hobbies.1" ] }).viewModelData,
+                { hobbies: { 0: { name: "singing" }, 1: { name: "dancing" } } },
+                "works for DefineMap with nested array - all expanded"
+            );
+
+            VM = DefineMap.extend({
+                hobbies: {
+                    Type: DefineList.extend("Hobbies", {
+                        "#": DefineMap.extend("Hobby", {
+                            name: "string"
+                        })
+                    }),
+                    default() {
+                        return [{ name: "singing" }, { name: "dancing" }];
+                    }
+                }
+            });
+
+            assert.deepEqual(
+                devtools.getSerializedViewModelData(new VM()).viewModelData,
+                { hobbies: { } },
+                "works for nested DefineMaps - unexpanded"
+            );
+
+            assert.deepEqual(
+                devtools.getSerializedViewModelData(new VM(), { expandedKeys: [ "hobbies" ] }).viewModelData,
+                { hobbies: { 0: { }, 1: { } } },
+                "works for nested DefineMaps - array expanded"
+            );
+
+            assert.deepEqual(
+                devtools.getSerializedViewModelData(new VM(), { expandedKeys: [ "hobbies", "hobbies.0", "hobbies.1" ] }).viewModelData,
+                { hobbies: { 0: { name: "singing" }, 1: { name: "dancing" } } },
+                "works for nested DefineMaps - everything expanded"
+            );
+            var PersonName = DefineMap.extend("Name", {
+              first: { type: "string", default: "kevin" },
+              last: { type: "string", default: "phillips" }
+            });
+
+            VM = DefineMap.extend("Person", {
+              name: { Default: PersonName },
+              age: { default: 32 }
+            });
+
+            assert.deepEqual(
+                devtools.getSerializedViewModelData(new VM()).viewModelData,
+                { age: 32, name: {} },
+                "only serializes top-level properties by default"
+            );
         });
 
-        assert.deepEqual(
-            devtools.getSerializedViewModelData(new VM()).viewModel,
-            { hobbies: { } },
-            "works for nested DefineMaps - unexpanded"
-        );
+        it("typeNames", () => {
+            const Thing = DefineMap.extend("AThing", {});
 
-        assert.deepEqual(
-            devtools.getSerializedViewModelData(new VM(), { expandedKeys: [ "hobbies" ] }).viewModel,
-            { hobbies: { 0: { }, 1: { } } },
-            "works for nested DefineMaps - array expanded"
-        );
+            let ViewModel = DefineMap.extend("ViewModel", {
+                aThing: { Type: Thing, Default: Thing }
+            });
 
-        assert.deepEqual(
-            devtools.getSerializedViewModelData(new VM(), { expandedKeys: [ "hobbies", "hobbies.0", "hobbies.1" ] }).viewModel,
-            { hobbies: { 0: { name: "singing" }, 1: { name: "dancing" } } },
-            "works for nested DefineMaps - everything expanded"
-        );
-        var PersonName = DefineMap.extend("Name", {
-          first: { type: "string", default: "kevin" },
-          last: { type: "string", default: "phillips" }
+            assert.deepEqual(
+                devtools.getSerializedViewModelData(new ViewModel()).typeNames,
+                { aThing: "AThing{}" },
+                "AThing{} - nothing expanded"
+            );
+
+            const ListOfThings = DefineList.extend("ListOfThings", {
+                "#": Thing
+            });
+
+            ViewModel = DefineMap.extend("ViewModel", {
+                things: { Type: ListOfThings, default: () => [{}] }
+            });
+
+            assert.deepEqual(
+                devtools.getSerializedViewModelData(new ViewModel()).typeNames,
+                { things: "ListOfThings[]" },
+                "ListOfThings[] - nothing expanded"
+            );
+
+            assert.deepEqual(
+                devtools.getSerializedViewModelData(new ViewModel(), { expandedKeys: [ "things" ] }).typeNames,
+                { things: "ListOfThings[]", "things.0": "AThing{}" },
+                "ListOfThings[] - list expanded"
+            );
+
+            const Name = DefineMap.extend("Name", {});
+            const NamedThing = DefineMap.extend("NamedThing", {
+                name: Name
+            });
+            const ListOfNamedThings = DefineList.extend("ListOfNamedThings", {
+                "#": NamedThing
+            });
+
+            ViewModel = DefineMap.extend("ViewModel", {
+                things: { Type: ListOfNamedThings, default: () => [{ name: {} }] }
+            });
+
+            assert.deepEqual(
+                devtools.getSerializedViewModelData(new ViewModel()).typeNames,
+                { things: "ListOfNamedThings[]" },
+                "ListOfNamedThings[] - nothing expanded"
+            );
+            assert.deepEqual(
+                devtools.getSerializedViewModelData(new ViewModel(), { expandedKeys: [ "things" ] }).typeNames,
+                { things: "ListOfNamedThings[]", "things.0": "NamedThing{}" },
+                "ListOfNamedThings[] - list expanded"
+            );
+            assert.deepEqual(
+                devtools.getSerializedViewModelData(new ViewModel(), { expandedKeys: [ "things", "things.0" ] }).typeNames,
+                { things: "ListOfNamedThings[]", "things.0": "NamedThing{}", "things.0.name": "Name{}" },
+                "ListOfNamedThings[] - everything expanded"
+            );
         });
 
-        VM = DefineMap.extend("Person", {
-          name: { Default: PersonName },
-          age: { default: 32 }
+        it("undefineds", () => {
+            const ViewModel = DefineMap.extend({
+                thisIsUndefined: { default: undefined },
+                obj: {
+                    Type: DefineMap,
+                    default() {
+                        return {
+                            thisIsUndefined: undefined
+                        };
+                    }
+                }
+            });
+
+            assert.deepEqual(
+                devtools.getSerializedViewModelData(new ViewModel()).undefineds,
+                [ "thisIsUndefined" ],
+                "nothing expanded"
+            );
+
+            assert.deepEqual(
+                devtools.getSerializedViewModelData(new ViewModel(), { expandedKeys: [ "obj" ] }).undefineds,
+                [ "thisIsUndefined", "obj.thisIsUndefined" ],
+                "obj expanded"
+            );
         });
-
-        assert.deepEqual(
-            devtools.getSerializedViewModelData(new VM()).viewModel,
-            { age: 32, name: {} },
-            "only serializes top-level properties by default"
-        );
-    });
-
-    it("getSerializedViewModelData - namesByPath", () => {
-        const Thing = DefineMap.extend("AThing", {});
-
-        let ViewModel = DefineMap.extend("ViewModel", {
-            aThing: { Type: Thing, Default: Thing }
-        });
-
-        assert.deepEqual(
-            devtools.getSerializedViewModelData(new ViewModel()).namesByPath,
-            { aThing: "AThing{}" },
-            "AThing{} - nothing expanded"
-        );
-
-        const ListOfThings = DefineList.extend("ListOfThings", {
-            "#": Thing
-        });
-
-        ViewModel = DefineMap.extend("ViewModel", {
-            things: { Type: ListOfThings, default: () => [{}] }
-        });
-
-        assert.deepEqual(
-            devtools.getSerializedViewModelData(new ViewModel()).namesByPath,
-            { things: "ListOfThings[]" },
-            "ListOfThings[] - nothing expanded"
-        );
-
-        assert.deepEqual(
-            devtools.getSerializedViewModelData(new ViewModel(), { expandedKeys: [ "things" ] }).namesByPath,
-            { things: "ListOfThings[]", "things.0": "AThing{}" },
-            "ListOfThings[] - list expanded"
-        );
-
-        const Name = DefineMap.extend("Name", {});
-        const NamedThing = DefineMap.extend("NamedThing", {
-            name: Name
-        });
-        const ListOfNamedThings = DefineList.extend("ListOfNamedThings", {
-            "#": NamedThing
-        });
-
-        ViewModel = DefineMap.extend("ViewModel", {
-            things: { Type: ListOfNamedThings, default: () => [{ name: {} }] }
-        });
-
-        assert.deepEqual(
-            devtools.getSerializedViewModelData(new ViewModel()).namesByPath,
-            { things: "ListOfNamedThings[]" },
-            "ListOfNamedThings[] - nothing expanded"
-        );
-        assert.deepEqual(
-            devtools.getSerializedViewModelData(new ViewModel(), { expandedKeys: [ "things" ] }).namesByPath,
-            { things: "ListOfNamedThings[]", "things.0": "NamedThing{}" },
-            "ListOfNamedThings[] - list expanded"
-        );
-        assert.deepEqual(
-            devtools.getSerializedViewModelData(new ViewModel(), { expandedKeys: [ "things", "things.0" ] }).namesByPath,
-            { things: "ListOfNamedThings[]", "things.0": "NamedThing{}", "things.0.name": "Name{}" },
-            "ListOfNamedThings[] - everything expanded"
-        );
     });
 
     it("updateViewModel", () => {
@@ -620,11 +654,11 @@ describe("canjs-devtools-injected-script", () => {
         });
 
         const c = new C();
-        const vm = c.viewModel;
+        const viewModel = c.viewModel;
         const el = c.element;
 
         assert.deepEqual(
-            devtools.getSerializedViewModelData(vm, { expandedKeys: [ "hobbies" ] }).viewModel,
+            devtools.getSerializedViewModelData(viewModel, { expandedKeys: [ "hobbies" ] }).viewModelData,
             { first: "Kevin", last: "McCallister", name: "Kevin McCallister", hobbies: { 0: "running", 1: "jumping" } },
             "default viewmodel data"
         );
@@ -635,7 +669,7 @@ describe("canjs-devtools-injected-script", () => {
         ]);
 
         assert.deepEqual(
-            devtools.getSerializedViewModelData(vm, { expandedKeys: [ "hobbies" ] }).viewModel,
+            devtools.getSerializedViewModelData(viewModel, { expandedKeys: [ "hobbies" ] }).viewModelData,
             { first: "Marty", last: "McFly", name: "Marty McFly", hobbies: { 0: "running", 1: "jumping" } },
             "set works"
         );
@@ -645,7 +679,7 @@ describe("canjs-devtools-injected-script", () => {
         ]);
 
         assert.deepEqual(
-            devtools.getSerializedViewModelData(vm, { expandedKeys: [ "hobbies" ] }).viewModel,
+            devtools.getSerializedViewModelData(viewModel, { expandedKeys: [ "hobbies" ] }).viewModelData,
             { first: "Marty", last: undefined, name: "Marty undefined", hobbies: { 0: "running", 1: "jumping" } },
             "delete works"
         );
@@ -655,7 +689,7 @@ describe("canjs-devtools-injected-script", () => {
         ]);
 
         assert.deepEqual(
-            devtools.getSerializedViewModelData(vm, { expandedKeys: [ "hobbies" ] }).viewModel,
+            devtools.getSerializedViewModelData(viewModel, { expandedKeys: [ "hobbies" ] }).viewModelData,
             { first: "Marty", last: undefined, name: "Marty undefined", hobbies: { 0: "skipping", 1: "jumping" } },
             "splice works"
         );
@@ -675,10 +709,10 @@ describe("canjs-devtools-injected-script", () => {
         });
 
         const c = new C();
-        const vm = c.viewModel;
+        const viewModel = c.viewModel;
 
         assert.deepEqual(
-            devtools.getViewModelKeys(vm),
+            devtools.getViewModelKeys(viewModel),
             [ "first", "last", "name" ],
             "gets viewmodel keys"
         );
