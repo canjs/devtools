@@ -15,6 +15,7 @@ export default Component.extend({
                 viewModelData:bind="viewModelData"
                 typeNamesData:bind="typeNamesData"
                 messages:bind="messages"
+                undefineds:bind="undefineds"
                 updateValues:from="updateValues"
                 expandedKeys:to="expandedKeys"
                 breakpoints:bind="breakpoints"
@@ -60,6 +61,7 @@ export default Component.extend({
                                 Reflect.updateDeep(vm.viewModelData, detail.viewModelData);
                                 vm.typeNamesData = detail.typeNames;
                                 vm.messages = detail.messages;
+                                vm.undefineds = detail.undefineds;
                                 break;
                         }
                     }
@@ -145,6 +147,15 @@ export default Component.extend({
                 // when a new node is selected, reset the data
                 listenTo("selectedNode", () => {
                     resolve(new DefineMap({}) );
+                });
+            }
+        },
+        undefineds: {
+            value({ listenTo, lastSet, resolve }) {
+                listenTo(lastSet, resolve);
+                // when a new node is selected, reset the data
+                listenTo("selectedNode", () => {
+                    resolve(new DefineList({}) );
                 });
             }
         },

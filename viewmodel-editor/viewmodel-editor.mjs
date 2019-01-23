@@ -14,6 +14,7 @@ Component.extend({
                 viewModelData:from="viewModelData"
                 typeNamesData:from="typeNamesData"
                 messages:from="messages"
+                undefineds:from="undefineds"
                 updateValues:from="updateValues"
                 expandedKeys:to="expandedKeys"
             ></viewmodel-editor>
@@ -26,6 +27,7 @@ Component.extend({
         viewModelData: DefineMap,
         typeNamesData: DefineMap,
         messages: DefineMap,
+        undefineds: DefineList,
         expandedKeys: DefineList,
 
         updateValues: function(data) {
@@ -62,16 +64,19 @@ Component.extend({
                                 vm.viewModelData = detail.viewModelData;
                                 vm.typeNamesData = detail.typeNames;
                                 vm.messages = detail.messages;
+                                vm.undefineds = detail.undefineds;
                             } else {
                                 if (vm.viewModelData) {
                                     if (detail.viewModelData) {
                                         Reflect.updateDeep(vm.viewModelData, detail.viewModelData);
                                         vm.typeNamesData = detail.typeNames;
                                         vm.messages = detail.messages;
+                                        vm.undefineds = detail.undefineds;
                                     } else {
                                         Reflect.deleteKeyValue(vm, "viewModelData");
                                         Reflect.deleteKeyValue(vm, "typeNamesData");
                                         Reflect.deleteKeyValue(vm, "messages");
+                                        Reflect.deleteKeyValue(vm, "undefineds");
                                     }
                                 } else {
                                     Reflect.setKeyValue(vm, "viewModelData", detail.viewModelData);
