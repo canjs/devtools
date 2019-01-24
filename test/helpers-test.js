@@ -42,6 +42,9 @@ describe("canjs-devtools-helpers", () => {
                             fnString: fnString.split("__CANJS_DEVTOOLS__.")[1],
                             url: options.frameURL
                         });
+
+                        // call success/error callback to make sure refresh happens
+                        callback();
                     }
                 }
             };
@@ -61,6 +64,48 @@ describe("canjs-devtools-helpers", () => {
 
             assert.equal(evalCalls[1].fnString, "fooBar()");
             assert.equal(evalCalls[1].url, "www.two.com");
+        });
+
+        it("refreshes data every refreshInterval for frames that are still active", (done) => {
+            const refreshInterval = 5;
+            helpers.registeredFrames = { "www.one.com": true, "www.two.com": true };
+
+            const teardown = helpers.runDevtoolsFunction({
+                fnString: "fooBar()",
+                refreshInterval
+            });
+
+            assert.equal(evalCalls.length, 2);
+
+            assert.equal(evalCalls[0].fnString, "fooBar()");
+            assert.equal(evalCalls[0].url, "www.one.com");
+
+            assert.equal(evalCalls[1].fnString, "fooBar()");
+            assert.equal(evalCalls[1].url, "www.two.com");
+
+            setTimeout(() => {
+                assert.equal(evalCalls.length, 4);
+
+                assert.equal(evalCalls[2].fnString, "fooBar()");
+                assert.equal(evalCalls[2].url, "www.one.com");
+
+                assert.equal(evalCalls[3].fnString, "fooBar()");
+                assert.equal(evalCalls[3].url, "www.two.com");
+
+                // remove second frame
+                helpers.registeredFrames = { "www.one.com": true };
+
+                setTimeout(() => {
+                    assert.equal(evalCalls.length, 5, "should not refresh data for removed frame");
+
+                    assert.equal(evalCalls[4].fnString, "fooBar()");
+                    assert.equal(evalCalls[4].url, "www.one.com");
+
+                    // stop refreshing so this doesn't break other tests
+                    teardown();
+                    done();
+                }, refreshInterval);
+            }, refreshInterval);
         });
     });
 
