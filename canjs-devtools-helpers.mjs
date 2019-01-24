@@ -3,15 +3,14 @@ const helpers = {
     // have a global `can` present
     registeredFrames: {},
 
-    runDevtoolsFunction: function(options) {
-        var devtoolsHelpers = this;
-        var timeoutIds = [];
-        var keepRefreshing = true;
+    runDevtoolsFunction(options) {
+        const timeoutIds = [];
+        let keepRefreshing = true;
 
-        var runDevtoolsFunctionForUrl = function(url) {
-            var refreshDataForThisUrl = function() {
+        const runDevtoolsFunctionForUrl = (url) => {
+            const refreshDataForThisUrl = () => {
                 if (keepRefreshing && options.refreshInterval) {
-                    var timeoutId = setTimeout(function() {
+                    const timeoutId = setTimeout(() => {
                         runDevtoolsFunctionForUrl(url);
                     }, options.refreshInterval);
 
@@ -19,11 +18,11 @@ const helpers = {
                 }
             };
 
-            if (devtoolsHelpers.registeredFrames[url]) {
+            if (helpers.registeredFrames[url]) {
                 chrome.devtools.inspectedWindow.eval(
                     `typeof __CANJS_DEVTOOLS__ === 'object' && __CANJS_DEVTOOLS__.${options.fn ? options.fn() : options.fnString}`,
                     { frameURL: url },
-                    function(result, exception) {
+                    (result, exception) => {
                         if (exception) {
                             refreshDataForThisUrl();
                             return;
@@ -39,11 +38,11 @@ const helpers = {
             }
         };
 
-        (function runDevtoolsFunctionForAllUrls() {
-            var frameURLs = Object.keys(devtoolsHelpers.registeredFrames);
+        const runDevtoolsFunctionForAllUrls = () => {
+            const frameURLs = Object.keys(helpers.registeredFrames);
 
             if (frameURLs.length) {
-                frameURLs.forEach(function(url) {
+                frameURLs.forEach((url) => {
                     runDevtoolsFunctionForUrl(url);
                 });
             } else {
@@ -51,9 +50,11 @@ const helpers = {
                     setTimeout(runDevtoolsFunctionForAllUrls, 500)
                 );
             }
-        }());
+        };
+        runDevtoolsFunctionForAllUrls();
 
-        return function() {
+        // teardown function
+        return () => {
             keepRefreshing = false;
 
             timeoutIds.forEach((id) => {
@@ -63,7 +64,7 @@ const helpers = {
     },
 
     getSafeKey(key, prependStr) {
-        var parts = key.split(".");
+        const parts = key.split(".");
         let last = "";
 
         const safeParts = parts.reduce((newParts, key) => {
@@ -140,12 +141,16 @@ const helpers = {
 };
 
 if (typeof chrome === "object" && chrome.runtime && chrome.runtime.onMessage) {
-    // listen to messages from the injected-script
-    chrome.runtime.onMessage.addListener(function(msg, sender) {
+    // listen to messages from the background script
+    chrome.runtime.onMessage.addListener((msg, sender) => {
         if (msg.type === "__CANJS_DEVTOOLS_UPDATE_FRAMES__") {
             helpers.registeredFrames = msg.frames;
         }
     });
+
+    // when a devtools panel is opened, request an updated list of frames
+    var port = chrome.runtime.connect({ name: "canjs-devtools" });
+    port.postMessage("canjs-devtools-loaded");
 }
 
 export default helpers;

@@ -1,9 +1,9 @@
 var port = chrome.runtime.connect({ name: "canjs-devtools" });
 
 // listen for messages passed from injected-script
-// and pass them back to extension panels
+// and pass them back to the background script
 document.addEventListener("__CANJS_DEVTOOLS_REGISTER__", function(response) {
-	port.postMessage("register");
+	port.postMessage("page-loaded");
 });
 
 // inject script into page to add __CANJS_DEVTOOLS__ namespace to window
