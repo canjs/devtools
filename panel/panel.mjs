@@ -16,6 +16,7 @@ export default Component.extend({
                 typeNamesData:bind="typeNamesData"
                 messages:bind="messages"
                 undefineds:bind="undefineds"
+                viewModelEditorError:bind="viewModelEditorError"
                 updateValues:from="updateValues"
                 expandedKeys:to="expandedKeys"
                 breakpoints:bind="breakpoints"
@@ -33,9 +34,11 @@ export default Component.extend({
             let stopRefreshingViewModelData = () => {};
 
             vm.listenTo("selectedNode", (ev, node) => {
-                helpers.runDevtoolsFunction({
-                    fnString: `selectComponentById(${node.id})`
-                });
+                if (node && "id" in node) {
+                    helpers.runDevtoolsFunction({
+                        fnString: `selectComponentById(${node.id})`
+                    });
+                }
 
                 // teardown old polling
                 stopRefreshingViewModelData();
@@ -55,13 +58,13 @@ export default Component.extend({
                             case "ignore":
                                 break;
                             case "error":
-                                vm.error = detail;
+                                vm.viewModelEditorError = detail;
                                 break;
                             case "success":
-                                Reflect.updateDeep(vm.viewModelData, detail.viewModelData);
-                                vm.typeNamesData = detail.typeNames;
-                                vm.messages = detail.messages;
-                                vm.undefineds = detail.undefineds;
+                                Reflect.updateDeep(vm.viewModelData, detail.viewModelData || {});
+                                vm.typeNamesData = detail.typeNames || {};
+                                vm.messages = detail.messages || {};
+                                vm.undefineds = detail.undefineds || [];
                                 break;
                         }
                     }
@@ -79,24 +82,25 @@ export default Component.extend({
                         case "ignore":
                             break;
                         case "error":
-                            vm.error = error;
+                            vm.breakpointsError = detail;
                             break;
                         case "success":
-                            vm.componentTree.updateDeep(detail.tree);
+                            vm.componentTree.updateDeep(detail.tree || []);
                             break;
                     };
                 }
             });
 
-            // get initial breakpoints
+            // get breakpoints data
             helpers.runDevtoolsFunction({
                 fnString: "getBreakpoints()",
+                refreshInterval: 100,
                 success(result) {
                     const status = result.status;
                     const detail = result.detail;
 
                     if (status === "success") {
-                        vm.breakpoints = detail.breakpoints;
+                        vm.breakpoints.updateDeep(detail.breakpoints || []);
                     }
                 }
             });
@@ -160,6 +164,7 @@ export default Component.extend({
             }
         },
         expandedKeys: DefineList,
+        viewModelEditorError: "string",
 
         // Breakpoints Panel data
         breakpointsError: {

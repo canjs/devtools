@@ -35,6 +35,16 @@ const helpers = {
                         refreshDataForThisUrl();
                     }
                 );
+            } else {
+                if (options.success) {
+                    // if there were frames before, and there are no frames now
+                    // reset data to the "empty" state
+                    options.success({
+                        status: "success",
+                        detail: {}
+                    });
+                    refreshDataForThisUrl();
+                }
             }
         };
 
