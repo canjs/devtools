@@ -3,6 +3,9 @@ const helpers = {
     // have a global `can` present
     registeredFrames: {},
 
+    // breakpoints loaded from background script when page is loaded
+    storedBreakpoints: [],
+
     runDevtoolsFunction(options) {
         const timeoutIds = [];
         let keepRefreshing = true;
@@ -106,29 +109,37 @@ const helpers = {
         return /[!=<>]/.test(expression);
     },
 
-    getBreakpointEvalString(expression, debuggerStatement = "debugger") {
-        const realExpression = this.getObservationExpression(expression);
-        const displayExpression = this.getDisplayExpression(expression);
-        const isBooleanExpression = this.isBooleanExpression(expression);
+    getBreakpointEvalString({
+        expression,
+        enabled = true,
+        observationExpression = this.getObservationExpression(expression),
+        selectedComponentStatement = "window.__CANJS_DEVTOOLS__.$0",
+        displayExpression = this.getDisplayExpression(expression),
+        pathStatement = "window.__CANJS_DEVTOOLS__.pathOf$0",
+        debuggerStatement = "debugger" // overwritable for testing
+    }) {
+        const isBooleanExpression = this.isBooleanExpression(observationExpression);
 
         return `(function() {
         const Observation = window.__CANJS_DEVTOOLS__.canObservation;
         const queues = window.__CANJS_DEVTOOLS__.canQueues;
-        const selectedComponent = window.__CANJS_DEVTOOLS__.$0;
+        const selectedComponent = ${selectedComponentStatement};
+
         if (!selectedComponent) {
             return { error: "Please select a component in order to create a mutation breakpoint for its ViewModel" };
         }
+
         const vm = selectedComponent.viewModel;
         const vmName = window.__CANJS_DEVTOOLS__.canReflect.getName(vm);
-        let oldValue = ${realExpression};
+        let oldValue = ${observationExpression};
 
         const observation = new Observation(() => {
-            return ${realExpression};
+            return ${observationExpression};
         });
         const origDependencyChange = observation.dependencyChange;
 
         observation.dependencyChange = function() {
-            const newValue = ${realExpression};
+            const newValue = ${observationExpression};
             ${ isBooleanExpression ?
             `if (newValue == true && oldValue != true) {
                 queues.logStack();
@@ -144,7 +155,10 @@ const helpers = {
 
         return {
             expression: \`${displayExpression}\`,
-            observation: observation
+            observation: observation,
+            observationExpression: \`${observationExpression}\`,
+            path: ${pathStatement},
+            enabled: ${enabled}
         };
     }())`
     }
@@ -153,14 +167,19 @@ const helpers = {
 if (typeof chrome === "object" && chrome.runtime && chrome.runtime.onMessage) {
     // listen to messages from the background script
     chrome.runtime.onMessage.addListener((msg, sender) => {
-        if (msg.type === "__CANJS_DEVTOOLS_UPDATE_FRAMES__") {
-            helpers.registeredFrames = msg.frames;
+        switch(msg.type) {
+            case  "__CANJS_DEVTOOLS_UPDATE_FRAMES__":
+                helpers.registeredFrames = msg.frames;
+                break;
+            case  "__CANJS_DEVTOOLS_UPDATE_BREAKPOINTS__":
+                helpers.storedBreakpoints = msg.breakpoints;
+                break;
         }
     });
 
     // when a devtools panel is opened, request an updated list of frames
     var port = chrome.runtime.connect({ name: "canjs-devtools" });
-    port.postMessage("canjs-devtools-loaded");
+    port.postMessage({ type: "canjs-devtools-loaded" });
 }
 
 export default helpers;

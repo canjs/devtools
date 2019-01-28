@@ -110,18 +110,20 @@ describe("canjs-devtools-helpers", () => {
     });
 
     describe("getBreakpointEvalString", () => {
-        let $0, debuggerHitCount, mock;
+        let $0, devtools, debuggerHitCount, mock;
 
         beforeEach(() => {
             $0 = { viewModel: {} };
 
-            window.__CANJS_DEVTOOLS__ = {
+            devtools = {
                 $0,
                 canReflect: Reflect,
                 canObservation: Observation,
                 canQueues: queues,
                 register() {}
             };
+
+            window.__CANJS_DEVTOOLS__ = devtools;
 
             // mock debugger so we can track when it is read
             debuggerHitCount = 0;
@@ -137,114 +139,173 @@ describe("canjs-devtools-helpers", () => {
             $0 = null;
         });
 
-        it("hobbies.length", () => {
-            let devtoolsVM = new (DefineMap.extend("DevtoolsVM", {
-                hobbies: { Default: DefineList }
-            }));
+        describe("can be created with expression", () => {
+            it("hobbies.length", () => {
+                let devtoolsVM = new (DefineMap.extend("DevtoolsVM", {
+                    hobbies: { Default: DefineList }
+                }));
 
-            $0.viewModel = devtoolsVM;
+                $0.viewModel = devtoolsVM;
 
-            let str = helpers.getBreakpointEvalString("hobbies.length", "mock._debugger");
-            let breakpoint = eval( str );
+                let str = helpers.getBreakpointEvalString({
+                    expression: "hobbies.length",
+                    debuggerStatement: "mock._debugger"
+                });
+                let breakpoint = eval( str );
 
-            assert.equal(breakpoint.expression, "DevtoolsVM{}.hobbies.length");
-            assert.equal(Reflect.getValue(breakpoint.observation), devtoolsVM.hobbies.length, "obs === hobbies.length");
+                assert.equal(breakpoint.expression, "DevtoolsVM{}.hobbies.length");
+                assert.equal(Reflect.getValue(breakpoint.observation), devtoolsVM.hobbies.length, "obs === hobbies.length");
 
-            Reflect.onValue(breakpoint.observation, () => {});
+                Reflect.onValue(breakpoint.observation, () => {});
 
-            devtoolsVM.hobbies.push("skiing");
-            assert.equal(debuggerHitCount, 1, "debugger hit once");
+                devtoolsVM.hobbies.push("skiing");
+                assert.equal(debuggerHitCount, 1, "debugger hit once");
 
-            devtoolsVM.hobbies.push("badminton");
-            assert.equal(debuggerHitCount, 2, "debugger hit again");
+                devtoolsVM.hobbies.push("badminton");
+                assert.equal(debuggerHitCount, 2, "debugger hit again");
+            });
+
+            it("hobbies.length > 1", () => {
+                let devtoolsVM = new (DefineMap.extend("DevtoolsVM", {
+                    hobbies: { Default: DefineList }
+                }));
+
+                $0.viewModel = devtoolsVM;
+
+                let str = helpers.getBreakpointEvalString({
+                    expression: "hobbies.length > 1",
+                    debuggerStatement: "mock._debugger"
+                });
+                let breakpoint = eval( str );
+
+                assert.equal(breakpoint.expression, "DevtoolsVM{}.hobbies.length > 1");
+                assert.equal(Reflect.getValue(breakpoint.observation), false, "obs === false");
+
+                Reflect.onValue(breakpoint.observation, () => {});
+
+                devtoolsVM.hobbies.push("skiing");
+                assert.equal(debuggerHitCount, 0, "debugger not hit");
+
+                devtoolsVM.hobbies.push("badminton");
+                assert.equal(debuggerHitCount, 1, "debugger hit once");
+
+                devtoolsVM.hobbies.push("luge");
+                assert.equal(debuggerHitCount, 1, "debugger not hit again");
+            });
+
+            it("hobbies.length > counter", () => {
+                let devtoolsVM = new (DefineMap.extend("DevtoolsVM", {
+                    hobbies: { Default: DefineList },
+                    counter: { default: 2 }
+                }));
+
+                $0.viewModel = devtoolsVM;
+
+                let str = helpers.getBreakpointEvalString({
+                    expression: "hobbies.length > counter",
+                    debuggerStatement: "mock._debugger"
+                });
+                let breakpoint = eval( str );
+
+                assert.equal(breakpoint.expression, "DevtoolsVM{}.hobbies.length > DevtoolsVM{}.counter");
+                assert.equal(Reflect.getValue(breakpoint.observation), false, "has correct value");
+
+                Reflect.onValue(breakpoint.observation, () => {});
+
+                devtoolsVM.hobbies.push("skiing");
+                assert.equal(debuggerHitCount, 0, "debugger not hit");
+
+                devtoolsVM.hobbies.push("badminton");
+                assert.equal(debuggerHitCount, 0, "debugger still not hit");
+
+                devtoolsVM.hobbies.push("curling");
+                assert.equal(debuggerHitCount, 1, "debugger hit");
+
+                devtoolsVM.hobbies.push("fencing");
+                assert.equal(debuggerHitCount, 1, "debugger not hit again");
+            });
+
+            it("returns an error if no componentelement is selected", () => {
+                window.__CANJS_DEVTOOLS__.$0 = null;
+
+                let str = helpers.getBreakpointEvalString({
+                    expression: "hobbies.length",
+                    debuggerStatement: "mock._debugger"
+                });
+                let breakpoint = eval( str );
+
+                assert.equal(breakpoint.error, "Please select a component in order to create a mutation breakpoint for its ViewModel");
+            });
+
+            it("hobbies.length works when hobbies does not exist", () => {
+                let devtoolsVM = new (DefineMap.extend("DevtoolsVM", {
+                    hobbies: { Type: DefineList }
+                }));
+
+                $0.viewModel = devtoolsVM;
+
+                let str = helpers.getBreakpointEvalString({
+                    expression: "hobbies.length",
+                    debuggerStatement: "mock._debugger"
+                });
+                let breakpoint = eval( str );
+
+                assert.equal(breakpoint.expression, "DevtoolsVM{}.hobbies.length");
+                assert.equal(Reflect.getValue(breakpoint.observation), undefined, "obs === undefined");
+
+                Reflect.onValue(breakpoint.observation, () => {});
+
+                devtoolsVM.hobbies = [];
+                assert.equal(debuggerHitCount, 1, "debugger hit once");
+
+                devtoolsVM.hobbies.push("skiing");
+                assert.equal(debuggerHitCount, 2, "debugger hit again");
+
+                devtoolsVM.hobbies = [ "dancing" ];
+                assert.equal(debuggerHitCount, 3, "debugger hit when list changes to new list of same length");
+            });
         });
 
-        it("hobbies.length > 1", () => {
-            let devtoolsVM = new (DefineMap.extend("DevtoolsVM", {
-                hobbies: { Default: DefineList }
-            }));
+        describe("can be restored with expression", () => {
+            beforeEach(() => {
+                const $0 = devtools.$0;
+                delete devtools.$0;
+                devtools.getComponentByPath = () => {
+                    return $0;
+                };
+            });
 
-            $0.viewModel = devtoolsVM;
+            afterEach(() => {
+                delete devtools.getComponentByPath;
+            });
 
-            let str = helpers.getBreakpointEvalString("hobbies.length > 1", "mock._debugger");
-            let breakpoint = eval( str );
+            it("hobbies.length", () => {
+                let devtoolsVM = new (DefineMap.extend("DevtoolsVM", {
+                    hobbies: { Default: DefineList }
+                }));
 
-            assert.equal(breakpoint.expression, "DevtoolsVM{}.hobbies.length > 1");
-            assert.equal(Reflect.getValue(breakpoint.observation), false, "obs === false");
+                $0.viewModel = devtoolsVM;
 
-            Reflect.onValue(breakpoint.observation, () => {});
+                let str = helpers.getBreakpointEvalString({
+                    expression: "DevtoolsVM{}.hobbies.length",
+                    displayExpression: "DevtoolsVM{}.hobbies.length",
+                    selectedComponentStatement: 'window.__CANJS_DEVTOOLS__.getComponentByPath("0")',
+                    observationExpression: "(vm.hobbies && vm.hobbies.length)",
+                    debuggerStatement: "mock._debugger"
+                });
+                let breakpoint = eval( str );
 
-            devtoolsVM.hobbies.push("skiing");
-            assert.equal(debuggerHitCount, 0, "debugger not hit");
+                assert.equal(breakpoint.expression, "DevtoolsVM{}.hobbies.length");
+                assert.equal(Reflect.getValue(breakpoint.observation), devtoolsVM.hobbies.length, "obs === hobbies.length");
 
-            devtoolsVM.hobbies.push("badminton");
-            assert.equal(debuggerHitCount, 1, "debugger hit once");
+                Reflect.onValue(breakpoint.observation, () => {});
 
-            devtoolsVM.hobbies.push("luge");
-            assert.equal(debuggerHitCount, 1, "debugger not hit again");
-        });
+                devtoolsVM.hobbies.push("skiing");
+                assert.equal(debuggerHitCount, 1, "debugger hit once");
 
-        it("hobbies.length > counter", () => {
-            let devtoolsVM = new (DefineMap.extend("DevtoolsVM", {
-                hobbies: { Default: DefineList },
-                counter: { default: 2 }
-            }));
-
-            $0.viewModel = devtoolsVM;
-
-            let str = helpers.getBreakpointEvalString("hobbies.length > counter", "mock._debugger");
-            let breakpoint = eval( str );
-
-            assert.equal(breakpoint.expression, "DevtoolsVM{}.hobbies.length > DevtoolsVM{}.counter");
-            assert.equal(Reflect.getValue(breakpoint.observation), false, "has correct value");
-
-            Reflect.onValue(breakpoint.observation, () => {});
-
-            devtoolsVM.hobbies.push("skiing");
-            assert.equal(debuggerHitCount, 0, "debugger not hit");
-
-            devtoolsVM.hobbies.push("badminton");
-            assert.equal(debuggerHitCount, 0, "debugger still not hit");
-
-            devtoolsVM.hobbies.push("curling");
-            assert.equal(debuggerHitCount, 1, "debugger hit");
-
-            devtoolsVM.hobbies.push("fencing");
-            assert.equal(debuggerHitCount, 1, "debugger not hit again");
-        });
-
-        it("returns an error if no componentelement is selected", () => {
-            window.__CANJS_DEVTOOLS__.$0 = null;
-
-            let str = helpers.getBreakpointEvalString("hobbies.length", "mock._debugger");
-            let breakpoint = eval( str );
-
-            assert.equal(breakpoint.error, "Please select a component in order to create a mutation breakpoint for its ViewModel");
-        });
-
-        it("hobbies.length works when hobbies does not exist", () => {
-            let devtoolsVM = new (DefineMap.extend("DevtoolsVM", {
-                hobbies: { Type: DefineList }
-            }));
-
-            $0.viewModel = devtoolsVM;
-
-            let str = helpers.getBreakpointEvalString("hobbies.length", "mock._debugger");
-            let breakpoint = eval( str );
-
-            assert.equal(breakpoint.expression, "DevtoolsVM{}.hobbies.length");
-            assert.equal(Reflect.getValue(breakpoint.observation), undefined, "obs === undefined");
-
-            Reflect.onValue(breakpoint.observation, () => {});
-
-            devtoolsVM.hobbies = [];
-            assert.equal(debuggerHitCount, 1, "debugger hit once");
-
-            devtoolsVM.hobbies.push("skiing");
-            assert.equal(debuggerHitCount, 2, "debugger hit again");
-
-            devtoolsVM.hobbies = [ "dancing" ];
-            assert.equal(debuggerHitCount, 3, "debugger hit when list changes to new list of same length");
+                devtoolsVM.hobbies.push("badminton");
+                assert.equal(debuggerHitCount, 2, "debugger hit again");
+            });
         });
     });
 

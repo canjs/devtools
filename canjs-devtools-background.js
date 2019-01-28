@@ -1,4 +1,5 @@
 const frames = {};
+const breakpointsByFrameURL = {};
 
 function updateFrameURLs() {
     const frameURLs = Object.keys(frames);
@@ -26,6 +27,13 @@ function updateFrameURLs() {
     }
 }
 
+function updateBreakpointsForURL(url) {
+    chrome.runtime.sendMessage({
+        type: "__CANJS_DEVTOOLS_UPDATE_BREAKPOINTS__",
+        breakpoints: breakpointsByFrameURL[url]
+    });
+}
+
 function getUrlFromPort(port) {
     return port.sender.url.split("#")[0];
 }
@@ -35,25 +43,34 @@ chrome.runtime.onConnect.addListener(function(port) {
     if (port.name === "canjs-devtools") {
         // and update frames map
         port.onMessage.addListener(function messageHandler(msg, port) {
-            // if this is a new frame being registered by the
-            // content-script, add its url to the frames list
-            // and update the frames lists in all helpers scripts
-            // that have executed already
-            if (msg === "page-loaded") {
-                const url = getUrlFromPort(port);
+            const url = getUrlFromPort(port);
+            const { type, data } = msg;
 
-                frames[url] = {
-                    frameURL: url,
-                    tabId: port.sender.tab.id
-                };
+            switch(type) {
+                case "page-loaded":
+                    // if this is a new frame being registered by the
+                    // injected-script, add its url to the frames list
+                    // and update the frames lists in all helpers scripts
+                    // that have executed already
+                    frames[url] = {
+                        frameURL: url,
+                        tabId: port.sender.tab.id
+                    };
 
-                updateFrameURLs();
-            }
+                    updateFrameURLs();
 
-            // if the helpers script is executing for the first time,
-            // just update the frames lists
-            if (msg === "canjs-devtools-loaded") {
-                updateFrameURLs();
+                    // also, send any breakpoints previously created for this URL
+                    updateBreakpointsForURL(url);
+
+                    break;
+                case "canjs-devtools-loaded":
+                    // if the helpers script is executing for the first time,
+                    // update the frames lists
+                    updateFrameURLs();
+                    break;
+                case "set-breakpoints":
+                    breakpointsByFrameURL[url] = data;
+                    break;
             }
         });
 

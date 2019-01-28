@@ -11,7 +11,7 @@ const isElement = (el) => el.toString() === "[object HTMLElement]";
 describe("canjs-devtools-injected-script", () => {
     let devtools, windowCan;
 
-    beforeEach(() => {
+    before(() => {
         // register devtools
         debug();
 
@@ -23,7 +23,7 @@ describe("canjs-devtools-injected-script", () => {
         devtools = window.__CANJS_DEVTOOLS__;
     });
 
-    afterEach(() => {
+    after(() => {
         window.can = windowCan;
     });
 
@@ -813,24 +813,29 @@ describe("canjs-devtools-injected-script", () => {
 
         it("getComponentTreeData", () => {
             assert.deepEqual(treeData, [{
+                path: "0",
                 selected: false,
                 tagName: "a-pp",
                 id: 0,
                 children: [{
+                    path: "0.children.0",
                     selected: false,
                     tagName: "a-child",
                     id: 1,
                     children: [{
+                        path: "0.children.0.children.0",
                         selected: false,
                         tagName: "a-deep-child",
                         id: 2,
                         children: []
                     }]
                 }, {
+                    path: "0.children.1",
                     selected: false,
                     tagName: "a-nother-child",
                     id: 3,
                     children: [{
+                        path: "0.children.1.children.0",
                         selected: true,
                         tagName: "a-nother-deep-child",
                         id: 4,
@@ -838,24 +843,29 @@ describe("canjs-devtools-injected-script", () => {
                     }]
                 }]
             }, {
+                path: "1",
                 selected: false,
                 tagName: "a-pp",
                 id: 5,
                 children: [{
+                    path: "1.children.0",
                     selected: false,
                     tagName: "a-child",
                     id: 6,
                     children: [{
+                        path: "1.children.0.children.0",
                         selected: false,
                         tagName: "a-deep-child",
                         id: 7,
                         children: []
                     }]
                 }, {
+                    path: "1.children.1",
                     selected: false,
                     tagName: "a-nother-child",
                     id: 8,
                     children: [{
+                        path: "1.children.1.children.0",
                         selected: false,
                         tagName: "a-nother-deep-child",
                         id: 9,
@@ -968,9 +978,9 @@ describe("canjs-devtools-injected-script", () => {
                 observation: obs
             }).detail.breakpoints;
 
-            const breakpointId = breakpoints[0].id;
+            let breakpointId = breakpoints[0].id;
 
-            assert.ok(Reflect.isBound(obs), "addBreakpoint binds passed observation");
+            assert.ok(Reflect.isBound(obs), "addBreakpoint binds observation");
 
             devtools.toggleBreakpoint(breakpointId);
             assert.ok(!Reflect.isBound(obs), "toggleBreakpoint unbinds observation");
@@ -980,6 +990,22 @@ describe("canjs-devtools-injected-script", () => {
 
             devtools.deleteBreakpoint(breakpointId);
             assert.ok(!Reflect.isBound(obs), "deleteBreakpoint unbinds observation");
+
+            breakpoints = devtools.addBreakpoint({
+                expression: "todos.length",
+                observation: obs,
+                enabled: false
+            }).detail.breakpoints;
+
+            assert.ok(!Reflect.isBound(obs), "addBreakpoint does not bind observation created with `enabled: false`");
+
+            breakpointId = breakpoints[0].id;
+
+            devtools.toggleBreakpoint(breakpointId);
+            assert.ok(Reflect.isBound(obs), "toggleBreakpoint binds observation created with `enabled: false`");
+
+            devtools.deleteBreakpoint(breakpointId);
+            assert.ok(!Reflect.isBound(obs), "deleteBreakpoint unbinds observation created with `enabled: false`");
         });
 
         it("handles errors", () => {
