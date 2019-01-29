@@ -61,14 +61,14 @@ Component.extend({
                             if (vm.tagName !== detail.tagName) {
                                 vm.error = null;
                                 vm.tagName = detail.tagName;
-                                vm.viewModelData = detail.viewModelData;
-                                vm.typeNamesData = detail.typeNames;
-                                vm.messages = detail.messages;
-                                vm.undefineds = detail.undefineds;
+                                vm.viewModelData = detail.viewModelData || {};
+                                vm.typeNamesData = detail.typeNames || {};
+                                vm.messages = detail.messages || {};
+                                vm.undefineds = detail.undefineds || [];
                             } else {
                                 if (vm.viewModelData) {
                                     if (detail.viewModelData) {
-                                        Reflect.updateDeep(vm.viewModelData, detail.viewModelData);
+                                        Reflect.updateDeep(vm.viewModelData, detail.viewModelData || {});
                                         vm.typeNamesData = detail.typeNames;
                                         vm.messages = detail.messages;
                                         vm.undefineds = detail.undefineds;

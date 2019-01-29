@@ -55,6 +55,22 @@
         return index;
     };
 
+    const sendEventToBackgroundScript = (detail) =>{
+        const registrationEvent = new CustomEvent("__CANJS_DEVTOOLS_EVENT__", { detail });
+        document.dispatchEvent(registrationEvent);
+    };
+
+    // add path information to component tree node and its children (recursively)
+    const addPaths = (node, index, parentPath) => {
+        let path = parentPath ? `${parentPath}.children.${index}` : `${index}`;
+        return Object.assign(node, {
+            path,
+            children: node.children.map((node, index) =>
+                addPaths(node, index, path)
+            )
+        });
+    };
+
     // expose devtools namespace on the window
     window.__CANJS_DEVTOOLS__ = {
         // flag indicating whether register has been called
@@ -62,6 +78,9 @@
 
         // element selected in CanJS Devtools Panel
         $0: null,
+
+        // path of element selected
+        pathOf$0: null,
 
         /*
          * methods called by devtools panels
@@ -77,9 +96,7 @@
             mergeDeep = can.mergeDeep;
 
             // register page so inspectedWindow.eval can call devtools functions in this frame
-            const registrationEvent = new CustomEvent("__CANJS_DEVTOOLS_REGISTER__");
-
-            document.dispatchEvent(registrationEvent);
+            sendEventToBackgroundScript({ type: "page-loaded" });
 
             this.registered = true;
         },
@@ -221,19 +238,25 @@
             }
 
             // cache componetTree so it can be used to find nodes by Id
-            componentTree = this.getComponentTreeDataForNode(
-                document.body,
-                this.getNearestElementWithViewModel(window.$0)
-            );
+            componentTree = this.getComponentTreeDataForNode({
+                el: document.body,
+                selectedComponent: this.getNearestElementWithViewModel(window.$0)
+            }).map((node, index) => addPaths(node, index));
 
             return this.makeSuccessResponse({
                 tree: componentTree
             });
         },
 
+        getComponentById(id) {
+            const node = this.getNodeById(id);
+            return nodeToElementMap.get(node);
+        },
+
         selectComponentById(id) {
             const node = this.getNodeById(id);
             this.$0 = nodeToElementMap.get(node);
+            this.pathOf$0 = node.path;
         },
 
         getBreakpoints() {
@@ -242,23 +265,36 @@
             });
         },
 
-        addBreakpoint({ expression, observation, error }) {
+        addBreakpoint({ expression, observation, observationExpression, error, enabled = true, path }) {
             if (error) {
                 return this.makeErrorResponse(error);
             }
+
+            // serializable data only
             const breakpoint = {
                 id: nextBreakpointId++,
                 expression,
-                enabled: true,
+                observationExpression,
+                enabled,
+                path
             };
 
             breakpoints.push(breakpoint);
+
+            // send updated list of breakpoints to background script
+            sendEventToBackgroundScript({
+                type: "set-breakpoints",
+                data: breakpoints
+            });
 
             if (observation) {
                 Object.defineProperty(observation.dependencyChange, "name", {
                     value: `${expression} debugger`
                 });
-                canReflect.onValue(observation, noop);
+
+                if (enabled) {
+                    canReflect.onValue(observation, noop);
+                }
 
                 breakpointToObservableMap.set(
                     breakpoint,
@@ -273,6 +309,12 @@
             const index = getIndexOfItemInArrayWithId(breakpoints, id);
             const breakpoint = breakpoints[index];
             breakpoint.enabled = !breakpoint.enabled;
+
+            // send updated list of breakpoints to background script
+            sendEventToBackgroundScript({
+                type: "set-breakpoints",
+                data: breakpoints
+            });
 
             const observation = breakpointToObservableMap.get(breakpoint);
             if (observation) {
@@ -294,6 +336,13 @@
                 canReflect.offValue(observation);
             }
             breakpoints.splice(index, 1);
+
+            // send updated list of breakpoints to background script
+            sendEventToBackgroundScript({
+                type: "set-breakpoints",
+                data: breakpoints
+            });
+
             return this.getBreakpoints();
         },
 
@@ -472,7 +521,7 @@
             return tagName;
         },
 
-        getComponentTreeDataForNode(el, selectedComponent) {
+        getComponentTreeDataForNode({ el, selectedComponent, parentPath = "" }) {
             let childList = [];
 
             const treeWalker = document.createTreeWalker(
@@ -492,7 +541,7 @@
                     let nodeData = {
                         tagName: node.tagName.toLowerCase(),
                         id: this.getNodeId(node),
-                        children: this.getComponentTreeDataForNode(node, selectedComponent),
+                        children: this.getComponentTreeDataForNode({el: node, selectedComponent }),
                         selected: node === selectedComponent
                     };
                     // cache element so it can be retrieved later when
@@ -501,7 +550,7 @@
                     childList.push(nodeData);
                 } else {
                     childList = childList.concat(
-                        this.getComponentTreeDataForNode(node, selectedComponent)
+                        this.getComponentTreeDataForNode({ el: node, selectedComponent })
                     );
                 }
                 node = treeWalker.nextSibling();

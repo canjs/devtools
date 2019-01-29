@@ -3,15 +3,17 @@ const helpers = {
     // have a global `can` present
     registeredFrames: {},
 
-    runDevtoolsFunction: function(options) {
-        var devtoolsHelpers = this;
-        var timeoutIds = [];
-        var keepRefreshing = true;
+    // breakpoints loaded from background script when page is loaded
+    storedBreakpoints: [],
 
-        var runDevtoolsFunctionForUrl = function(url) {
-            var refreshDataForThisUrl = function() {
+    runDevtoolsFunction(options) {
+        const timeoutIds = [];
+        let keepRefreshing = true;
+
+        const runDevtoolsFunctionForUrl = (url) => {
+            const refreshDataForThisUrl = () => {
                 if (keepRefreshing && options.refreshInterval) {
-                    var timeoutId = setTimeout(function() {
+                    const timeoutId = setTimeout(() => {
                         runDevtoolsFunctionForUrl(url);
                     }, options.refreshInterval);
 
@@ -19,35 +21,41 @@ const helpers = {
                 }
             };
 
-            chrome.devtools.inspectedWindow.eval(
-                `typeof __CANJS_DEVTOOLS__ === 'object' && __CANJS_DEVTOOLS__.${options.fn ? options.fn() : options.fnString}`,
-                { frameURL: url },
-                function(result, exception) {
-                    if (exception) {
-                        // if there was an exception because we sent a message to a frame
-                        // that no longer exists, remove that frame's URL from registeredFrames
-                        // to prevent more exceptions before the next _UPDATE_FRAMES_ message
-                        if (exception.code === "E_NOTFOUND") {
-                            delete devtoolsHelpers.registeredFrames[ exception.details[0] ];
+            if (helpers.registeredFrames[url]) {
+                chrome.devtools.inspectedWindow.eval(
+                    `typeof __CANJS_DEVTOOLS__ === 'object' && __CANJS_DEVTOOLS__.${options.fn ? options.fn() : options.fnString}`,
+                    { frameURL: url },
+                    (result, exception) => {
+                        if (exception) {
+                            refreshDataForThisUrl();
+                            return;
                         }
+
+                        if (options.success) {
+                            options.success(result);
+                        }
+
                         refreshDataForThisUrl();
-                        return;
                     }
-
-                    if (options.success) {
-                        options.success(result);
-                    }
-
+                );
+            } else {
+                if (options.success) {
+                    // if there were frames before, and there are no frames now
+                    // reset data to the "empty" state
+                    options.success({
+                        status: "success",
+                        detail: {}
+                    });
                     refreshDataForThisUrl();
                 }
-            );
+            }
         };
 
-        (function runDevtoolsFunctionForAllUrls() {
-            var frameURLs = Object.keys(devtoolsHelpers.registeredFrames);
+        const runDevtoolsFunctionForAllUrls = () => {
+            const frameURLs = Object.keys(helpers.registeredFrames);
 
             if (frameURLs.length) {
-                frameURLs.forEach(function(url) {
+                frameURLs.forEach((url) => {
                     runDevtoolsFunctionForUrl(url);
                 });
             } else {
@@ -55,9 +63,11 @@ const helpers = {
                     setTimeout(runDevtoolsFunctionForAllUrls, 500)
                 );
             }
-        }());
+        };
+        runDevtoolsFunctionForAllUrls();
 
-        return function() {
+        // teardown function
+        return () => {
             keepRefreshing = false;
 
             timeoutIds.forEach((id) => {
@@ -67,7 +77,7 @@ const helpers = {
     },
 
     getSafeKey(key, prependStr) {
-        var parts = key.split(".");
+        const parts = key.split(".");
         let last = "";
 
         const safeParts = parts.reduce((newParts, key) => {
@@ -99,29 +109,37 @@ const helpers = {
         return /[!=<>]/.test(expression);
     },
 
-    getBreakpointEvalString(expression, debuggerStatement = "debugger") {
-        const realExpression = this.getObservationExpression(expression);
-        const displayExpression = this.getDisplayExpression(expression);
-        const isBooleanExpression = this.isBooleanExpression(expression);
+    getBreakpointEvalString({
+        expression,
+        enabled = true,
+        observationExpression = this.getObservationExpression(expression),
+        selectedComponentStatement = "window.__CANJS_DEVTOOLS__.$0",
+        displayExpression = this.getDisplayExpression(expression),
+        pathStatement = "window.__CANJS_DEVTOOLS__.pathOf$0",
+        debuggerStatement = "debugger" // overwritable for testing
+    }) {
+        const isBooleanExpression = this.isBooleanExpression(observationExpression);
 
         return `(function() {
         const Observation = window.__CANJS_DEVTOOLS__.canObservation;
         const queues = window.__CANJS_DEVTOOLS__.canQueues;
-        const selectedComponent = window.__CANJS_DEVTOOLS__.$0;
+        const selectedComponent = ${selectedComponentStatement};
+
         if (!selectedComponent) {
             return { error: "Please select a component in order to create a mutation breakpoint for its ViewModel" };
         }
+
         const vm = selectedComponent.viewModel;
         const vmName = window.__CANJS_DEVTOOLS__.canReflect.getName(vm);
-        let oldValue = ${realExpression};
+        let oldValue = ${observationExpression};
 
         const observation = new Observation(() => {
-            return ${realExpression};
+            return ${observationExpression};
         });
         const origDependencyChange = observation.dependencyChange;
 
         observation.dependencyChange = function() {
-            const newValue = ${realExpression};
+            const newValue = ${observationExpression};
             ${ isBooleanExpression ?
             `if (newValue == true && oldValue != true) {
                 queues.logStack();
@@ -137,19 +155,31 @@ const helpers = {
 
         return {
             expression: \`${displayExpression}\`,
-            observation: observation
+            observation: observation,
+            observationExpression: \`${observationExpression}\`,
+            path: ${pathStatement},
+            enabled: ${enabled}
         };
     }())`
     }
 };
 
 if (typeof chrome === "object" && chrome.runtime && chrome.runtime.onMessage) {
-    // listen to messages from the injected-script
-    chrome.runtime.onMessage.addListener(function(msg, sender) {
-        if (msg.type === "__CANJS_DEVTOOLS_UPDATE_FRAMES__") {
-            helpers.registeredFrames = msg.frames;
+    // listen to messages from the background script
+    chrome.runtime.onMessage.addListener((msg, sender) => {
+        switch(msg.type) {
+            case  "__CANJS_DEVTOOLS_UPDATE_FRAMES__":
+                helpers.registeredFrames = msg.frames;
+                break;
+            case  "__CANJS_DEVTOOLS_UPDATE_BREAKPOINTS__":
+                helpers.storedBreakpoints = msg.breakpoints;
+                break;
         }
     });
+
+    // when a devtools panel is opened, request an updated list of frames
+    var port = chrome.runtime.connect({ name: "canjs-devtools" });
+    port.postMessage({ type: "canjs-devtools-loaded" });
 }
 
 export default helpers;

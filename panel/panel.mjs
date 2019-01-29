@@ -16,6 +16,7 @@ export default Component.extend({
                 typeNamesData:bind="typeNamesData"
                 messages:bind="messages"
                 undefineds:bind="undefineds"
+                viewModelEditorError:bind="viewModelEditorError"
                 updateValues:from="updateValues"
                 expandedKeys:to="expandedKeys"
                 breakpoints:bind="breakpoints"
@@ -33,9 +34,11 @@ export default Component.extend({
             let stopRefreshingViewModelData = () => {};
 
             vm.listenTo("selectedNode", (ev, node) => {
-                helpers.runDevtoolsFunction({
-                    fnString: `selectComponentById(${node.id})`
-                });
+                if (node && "id" in node) {
+                    helpers.runDevtoolsFunction({
+                        fnString: `selectComponentById(${node.id})`
+                    });
+                }
 
                 // teardown old polling
                 stopRefreshingViewModelData();
@@ -55,13 +58,13 @@ export default Component.extend({
                             case "ignore":
                                 break;
                             case "error":
-                                vm.error = detail;
+                                vm.viewModelEditorError = detail;
                                 break;
                             case "success":
-                                Reflect.updateDeep(vm.viewModelData, detail.viewModelData);
-                                vm.typeNamesData = detail.typeNames;
-                                vm.messages = detail.messages;
-                                vm.undefineds = detail.undefineds;
+                                Reflect.updateDeep(vm.viewModelData, detail.viewModelData || {});
+                                vm.typeNamesData = detail.typeNames || {};
+                                vm.messages = detail.messages || {};
+                                vm.undefineds = detail.undefineds || [];
                                 break;
                         }
                     }
@@ -79,24 +82,66 @@ export default Component.extend({
                         case "ignore":
                             break;
                         case "error":
-                            vm.error = error;
+                            vm.breakpointsError = detail;
                             break;
                         case "success":
-                            vm.componentTree.updateDeep(detail.tree);
+                            vm.componentTree.updateDeep(detail.tree || []);
+
+                            // restore breakpoints stored in background script (via helpers).
+                            // this is done after tree data is loaded so that observation can
+                            // be created on component's viewmodel for each breakpoint.
+                            helpers.storedBreakpoints.forEach((bp, index) => {
+                                if (!bp.restored) {
+                                    let { expression, path, observationExpression, enabled } = bp;
+
+                                    const node = path.split(".").reduce((parent, key) => {
+                                        return parent && parent[key];
+                                    }, detail.tree);
+
+                                    // if node does not exist in tree, do not set up breakpoint
+                                    if (node && node.id) {
+                                        helpers.runDevtoolsFunction({
+                                            // indentation below is weird on purpose
+                                            // this is so it looks normal when a debugger is hit
+                                            fnString:
+`addBreakpoint(
+    ${ helpers.getBreakpointEvalString({ expression, selectedComponentStatement: `window.__CANJS_DEVTOOLS__.getComponentById(${node.id})`, observationExpression, displayExpression: expression, pathStatement: `"${path}"`, enabled }) }
+)`,
+                                            success(result) {
+                                                const status = result.status;
+                                                const detail = result.detail;
+
+                                                switch(status) {
+                                                    case "error":
+                                                        vm.breakpointsError = detail;
+                                                        break;
+                                                    case "success":
+                                                        vm.breakpoints = detail.breakpoints;
+
+                                                        // mark breakpoint once it has been restored so it will not be restored again
+                                                        helpers.storedBreakpoints[index].restored = true;
+                                                        break;
+                                                }
+                                            }
+                                        });
+                                    }
+                                }
+                            });
                             break;
                     };
                 }
             });
 
-            // get initial breakpoints
+            // get breakpoints data
             helpers.runDevtoolsFunction({
                 fnString: "getBreakpoints()",
+                refreshInterval: 100,
                 success(result) {
                     const status = result.status;
                     const detail = result.detail;
 
                     if (status === "success") {
-                        vm.breakpoints = detail.breakpoints;
+                        vm.breakpoints.updateDeep(detail.breakpoints || []);
                     }
                 }
             });
@@ -160,6 +205,7 @@ export default Component.extend({
             }
         },
         expandedKeys: DefineList,
+        viewModelEditorError: "string",
 
         // Breakpoints Panel data
         breakpointsError: {
@@ -185,8 +231,11 @@ export default Component.extend({
             const vm = this;
 
             helpers.runDevtoolsFunction({
-                fnString: `addBreakpoint(
-    ${ helpers.getBreakpointEvalString(expression) }
+                // indentation below is weird on purpose
+                // this is so it looks normal when a debugger is hit
+                fnString:
+`addBreakpoint(
+    ${ helpers.getBreakpointEvalString({ expression }) }
 )`,
                 success(result) {
                     const status = result.status;
