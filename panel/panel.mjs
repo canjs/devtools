@@ -90,7 +90,9 @@ export default Component.extend({
                             // restore breakpoints stored in background script (via helpers).
                             // this is done after tree data is loaded so that observation can
                             // be created on component's viewmodel for each breakpoint.
-                            helpers.storedBreakpoints.forEach((bp, index) => {
+                            const storedBreakpoints = helpers.storedBreakpoints || [];
+
+                            storedBreakpoints.forEach((bp, index) => {
                                 if (!bp.restored) {
                                     let { expression, path, observationExpression, enabled } = bp;
 
