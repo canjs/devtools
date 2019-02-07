@@ -1,18 +1,53 @@
 const helpers = {
+    frameChangeHandlers: [],
+
+    onFrameChange(fn) {
+      this.frameChangeHandlers.push(fn);
+    },
+
+    offFrameChange(fn) {
+      const index = this.frameChangeHandlers.indexOf(fn);
+      if (index > -1) {
+        this.frameChangeHandlers.splice(index, 1);
+      }
+    },
+
+    runFrameChangeHandlers() {
+      // copy handlers to new array
+      // since calling the handlers will add to the original array
+      const handlers = this.frameChangeHandlers.slice(0);
+
+      // reset handlers
+      this.frameChangeHandlers = [];
+
+      // call handlers in new array
+      for (let handler of handlers) {
+        handler();
+      }
+    },
+
     // URLs of all frames that have registered that they
     // have a global `can` present
-    registeredFrames: {},
+    _registeredFrames: {},
+
+    get registeredFrames() {
+      return this._registeredFrames;
+    },
+
+    set registeredFrames(frames) {
+      this._registeredFrames = frames;
+      this.runFrameChangeHandlers();
+    },
 
     // breakpoints loaded from background script when page is loaded
     storedBreakpoints: [],
 
     runDevtoolsFunction(options) {
         const timeoutIds = [];
-        let keepRefreshing = true;
 
         const runDevtoolsFunctionForUrl = (url) => {
             const refreshDataForThisUrl = () => {
-                if (keepRefreshing && options.refreshInterval) {
+                if (options.refreshInterval) {
                     const timeoutId = setTimeout(() => {
                         runDevtoolsFunctionForUrl(url);
                     }, options.refreshInterval);
@@ -46,9 +81,25 @@ const helpers = {
                         status: "success",
                         detail: {}
                     });
-                    refreshDataForThisUrl();
                 }
             }
+        };
+
+        // teardown function
+        const teardown = () => {
+            timeoutIds.forEach((id) => {
+                clearTimeout(id);
+            });
+
+            this.offFrameChange(frameChangeHandler);
+        };
+
+        const frameChangeHandler = () => {
+          // remove old `refreshDataForThisUrl` timeouts
+          teardown();
+
+          // run function for all new frames
+          runDevtoolsFunctionForAllUrls();
         };
 
         const runDevtoolsFunctionForAllUrls = () => {
@@ -58,22 +109,17 @@ const helpers = {
                 frameURLs.forEach((url) => {
                     runDevtoolsFunctionForUrl(url);
                 });
-            } else {
-                timeoutIds.push(
-                    setTimeout(runDevtoolsFunctionForAllUrls, 500)
-                );
             }
+
+            // when a frame is added or removed
+            // remove the old refresh handlers
+            // and re-create them
+            this.onFrameChange(frameChangeHandler);
         };
+
         runDevtoolsFunctionForAllUrls();
 
-        // teardown function
-        return () => {
-            keepRefreshing = false;
-
-            timeoutIds.forEach((id) => {
-                clearTimeout(id);
-            });
-        };
+        return teardown;
     },
 
     getSafeKey(key, prependStr) {
