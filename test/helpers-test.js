@@ -53,7 +53,7 @@ describe("canjs-devtools-helpers", () => {
         it("makes an eval call to each registered frame", () => {
             helpers.registeredFrames = { "www.one.com": true, "www.two.com": true };
 
-            helpers.runDevtoolsFunction({
+            const teardown = helpers.runDevtoolsFunction({
                 fnString: "fooBar()"
             });
 
@@ -64,18 +64,28 @@ describe("canjs-devtools-helpers", () => {
 
             assert.equal(evalCalls[1].fnString, "fooBar()");
             assert.equal(evalCalls[1].url, "www.two.com");
+
+            // clean up frameChangeHandlers so this doesn't break other tests
+            teardown();
         });
 
         it("refreshes data every refreshInterval for frames that are still active", (done) => {
             const refreshInterval = 5;
-            helpers.registeredFrames = { "www.one.com": true, "www.two.com": true };
+            const refreshAllInterval = 10;
+
+            helpers.registeredFrames = {};
 
             const teardown = helpers.runDevtoolsFunction({
                 fnString: "fooBar()",
-                refreshInterval
+                refreshInterval,
+                refreshAllInterval
             });
 
-            assert.equal(evalCalls.length, 2);
+            assert.equal(evalCalls.length, 0, "should not call eval if there are no frames");
+
+            helpers.registeredFrames = { "www.one.com": true, "www.two.com": true };
+
+            assert.equal(evalCalls.length, 2, "when frames change, should call eval for each frame");
 
             assert.equal(evalCalls[0].fnString, "fooBar()");
             assert.equal(evalCalls[0].url, "www.one.com");
@@ -84,7 +94,7 @@ describe("canjs-devtools-helpers", () => {
             assert.equal(evalCalls[1].url, "www.two.com");
 
             setTimeout(() => {
-                assert.equal(evalCalls.length, 4);
+                assert.equal(evalCalls.length, 4, "should refresh data every refresh interval");
 
                 assert.equal(evalCalls[2].fnString, "fooBar()");
                 assert.equal(evalCalls[2].url, "www.one.com");
@@ -95,16 +105,22 @@ describe("canjs-devtools-helpers", () => {
                 // remove second frame
                 helpers.registeredFrames = { "www.one.com": true };
 
-                setTimeout(() => {
-                    assert.equal(evalCalls.length, 5, "should not refresh data for removed frame");
+                assert.equal(evalCalls.length, 5, "should not refresh data for removed frame");
 
-                    assert.equal(evalCalls[4].fnString, "fooBar()");
-                    assert.equal(evalCalls[4].url, "www.one.com");
+                assert.equal(evalCalls[4].fnString, "fooBar()");
+                assert.equal(evalCalls[4].url, "www.one.com");
 
-                    // stop refreshing so this doesn't break other tests
-                    teardown();
-                    done();
-                }, refreshInterval);
+                // replace frame with a new one
+                helpers.registeredFrames = { "www.three.com": true };
+
+                assert.equal(evalCalls.length, 6, "should load data for new frame");
+
+                assert.equal(evalCalls[5].fnString, "fooBar()");
+                assert.equal(evalCalls[5].url, "www.three.com");
+
+                // stop refreshing so this doesn't break other tests
+                teardown();
+                done();
             }, refreshInterval);
         });
     });
