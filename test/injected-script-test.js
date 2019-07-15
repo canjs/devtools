@@ -726,7 +726,7 @@ describe("canjs-devtools-injected-script", () => {
     });
 
     describe("component tree", () => {
-        let appOne, appTwo, treeData;
+        let appOne, appTwo, appThree, treeData;
         const fixture = document.getElementById("mocha-fixture");
 
         // run once before all tests in this describe
@@ -797,9 +797,13 @@ describe("canjs-devtools-injected-script", () => {
             const b = new App();
             appTwo = b.element;
 
+            appThree = document.createElement("aa-pp");
+            appThree[Symbol.for("can.viewModel")] = appThree;
+            
             fixture.appendChild(appOne);
             fixture.appendChild(appTwo);
-
+            fixture.appendChild(appThree);
+            
             window.$0 = fixture.querySelector("a-nother-deep-child");
 
             const resp = devtools.getComponentTreeData();
@@ -809,6 +813,7 @@ describe("canjs-devtools-injected-script", () => {
         after(() => {
             fixture.removeChild(appOne);
             fixture.removeChild(appTwo);
+            fixture.removeChild(appThree);
         });
 
         it("getComponentTreeData", () => {
@@ -872,6 +877,12 @@ describe("canjs-devtools-injected-script", () => {
                         children: []
                     }]
                 }]
+            }, {
+                path: "2",
+                selected: false,
+                tagName: "aa-pp",
+                id: 10,
+                children: []
             }]);
         });
 
@@ -915,6 +926,10 @@ describe("canjs-devtools-injected-script", () => {
             devtools.selectComponentById(9);
             assert.ok(isElement(devtools.$0), "AnotherDeepChild");
             assert.equal(devtools.$0.tagName.toLowerCase(), "a-nother-deep-child", "second a-nother-deep-child");
+
+            devtools.selectComponentById(10);
+            assert.ok(isElement(devtools.$0), "aa-pp");
+            assert.equal(devtools.$0.tagName.toLowerCase(), "aa-pp", "the element is the viewmodel child");
         });
     });
 
