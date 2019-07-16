@@ -537,11 +537,11 @@
 
             let node = treeWalker.firstChild();
             while(node) {
-                if ("viewModel" in node) {
+                if (node[viewModelSymbol]) {
                     let nodeData = {
                         tagName: node.tagName.toLowerCase(),
                         id: this.getNodeId(node),
-                        children: this.getComponentTreeDataForNode({el: node, selectedComponent }),
+                        children: this.getComponentTreeDataForNode({ el: node, selectedComponent }),
                         selected: node === selectedComponent
                     };
                     // cache element so it can be retrieved later when
