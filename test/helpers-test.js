@@ -282,33 +282,6 @@ describe("canjs-devtools-helpers", () => {
             });
         });
 
-        describe("can be created with StacheElement", () => {
-            it("hobbies.length", () => {
-                let devtoolsVM = new (DefineMap.extend("DevtoolsVM", {
-                    hobbies: { Default: DefineList }
-                }));
-
-                $0[Symbol.for('can.viewModel')] = devtoolsVM;
-
-                let str = helpers.getBreakpointEvalString({
-                    expression: "hobbies.length",
-                    debuggerStatement: "mock._debugger"
-                });
-                let breakpoint = eval( str );
-
-                assert.equal(breakpoint.expression, "DevtoolsVM{}.hobbies.length");
-                assert.equal(Reflect.getValue(breakpoint.observation), devtoolsVM.hobbies.length, "obs === hobbies.length");
-
-                Reflect.onValue(breakpoint.observation, () => {});
-
-                devtoolsVM.hobbies.push("skiing");
-                assert.equal(debuggerHitCount, 1, "debugger hit once");
-
-                devtoolsVM.hobbies.push("badminton");
-                assert.equal(debuggerHitCount, 2, "debugger hit again");
-            });
-        });
-
         describe("can be restored with expression", () => {
             beforeEach(() => {
                 const $0 = devtools.$0;
