@@ -129,7 +129,7 @@ describe("canjs-devtools-helpers", () => {
         let $0, devtools, debuggerHitCount, mock;
 
         beforeEach(() => {
-            $0 = { viewModel: {} };
+            $0 = { [Symbol.for('can.viewModel')]: {} };
 
             devtools = {
                 $0,
@@ -161,7 +161,7 @@ describe("canjs-devtools-helpers", () => {
                     hobbies: { Default: DefineList }
                 }));
 
-                $0.viewModel = devtoolsVM;
+                $0[Symbol.for('can.viewModel')] = devtoolsVM;
 
                 let str = helpers.getBreakpointEvalString({
                     expression: "hobbies.length",
@@ -186,7 +186,7 @@ describe("canjs-devtools-helpers", () => {
                     hobbies: { Default: DefineList }
                 }));
 
-                $0.viewModel = devtoolsVM;
+                $0[Symbol.for('can.viewModel')] = devtoolsVM;
 
                 let str = helpers.getBreakpointEvalString({
                     expression: "hobbies.length > 1",
@@ -215,7 +215,7 @@ describe("canjs-devtools-helpers", () => {
                     counter: { default: 2 }
                 }));
 
-                $0.viewModel = devtoolsVM;
+                $0[Symbol.for('can.viewModel')] = devtoolsVM;
 
                 let str = helpers.getBreakpointEvalString({
                     expression: "hobbies.length > counter",
@@ -258,7 +258,7 @@ describe("canjs-devtools-helpers", () => {
                     hobbies: { Type: DefineList }
                 }));
 
-                $0.viewModel = devtoolsVM;
+                $0[Symbol.for('can.viewModel')] = devtoolsVM;
 
                 let str = helpers.getBreakpointEvalString({
                     expression: "hobbies.length",
@@ -300,7 +300,7 @@ describe("canjs-devtools-helpers", () => {
                     hobbies: { Default: DefineList }
                 }));
 
-                $0.viewModel = devtoolsVM;
+                $0[Symbol.for('can.viewModel')] = devtoolsVM;
 
                 let str = helpers.getBreakpointEvalString({
                     expression: "DevtoolsVM{}.hobbies.length",

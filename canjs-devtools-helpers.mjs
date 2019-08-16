@@ -175,7 +175,7 @@ const helpers = {
             return { error: "Please select a component in order to create a mutation breakpoint for its ViewModel" };
         }
 
-        const vm = selectedComponent.viewModel;
+        const vm = selectedComponent[Symbol.for('can.viewModel')];
         const vmName = window.__CANJS_DEVTOOLS__.canReflect.getName(vm);
         let oldValue = ${observationExpression};
 
