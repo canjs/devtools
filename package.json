@@ -13,9 +13,13 @@
     "web": "http://bitovi.com/"
   },
   "scripts": {
+    "lint": "eslint . ",
     "testee": "testee test/test.html --browsers firefox",
     "testee-mjs": "testee test/mjs-test.html --browsers firefox",
-    "test": "npm run testee && npm run testee-mjs"
+    "test": "npm run lint && npm run testee && npm run testee-mjs"
+  },
+  "steal": {
+    "forceES5": false
   },
   "license": "MIT",
   "bugs": {
@@ -23,11 +27,12 @@
   },
   "homepage": "https://canjs.com",
   "dependencies": {
-    "can-devtools-components": "^0.11.8"
+    "can-devtools-components": "^0.11.10-0"
   },
   "devDependencies": {
-    "can": "^5.17.2",
+    "can": "^6.2.3",
     "chai": "^4.2.0",
+    "eslint": "^6.5.1",
     "steal": "^2.1.10",
     "steal-mocha": "^2.0.1",
     "testee": "^0.9.1"
