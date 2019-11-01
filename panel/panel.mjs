@@ -1,290 +1,315 @@
-import { Component, DefineMap, DefineList, Reflect } from "../node_modules/can-devtools-components/dist/panel.mjs";
+import {
+	ObservableArray,
+	ObservableObject,
+	Reflect,
+	StacheElement,
+	type
+} from "../node_modules/can-devtools-components/dist/panel.mjs";
 
 import helpers from "../canjs-devtools-helpers.mjs";
 
-export default Component.extend({
-    tag: "canjs-devtools-panel",
+export default class CanjsDevtoolsPanel extends StacheElement {
+	static get view() {
+		return `
+			{{# if(this.panelError) }}
+				<h2>{{{ this.panelError }}}</h2>
+			{{ else }}
+				<components-panel
+					componentTree:to="this.componentTree"
+					selectedNode:to="this.selectedNode"
+					viewModelData:bind="this.viewModelData"
+					typeNamesData:bind="this.typeNamesData"
+					messages:bind="this.messages"
+					undefineds:bind="this.undefineds"
+					viewModelEditorError:bind="this.viewModelEditorError"
+					updateValues:from="this.updateValues"
+					expandedKeys:to="this.expandedKeys"
+					breakpoints:bind="this.breakpoints"
+					breakpointsError:bind="this.breakpointsError"
+					addBreakpoint:from="this.addBreakpoint"
+					toggleBreakpoint:from="this.toggleBreakpoint"
+					deleteBreakpoint:from="this.deleteBreakpoint"
+				></components-panel>
+			{{/ if }}
+		`;
+	}
 
-    view: `
-        {{# if(error) }}
-            <h2>{{{error}}}</h2>
-        {{ else }}
-            <components-panel
-                componentTree:to="componentTree"
-                selectedNode:to="selectedNode"
-                viewModelData:bind="viewModelData"
-                typeNamesData:bind="typeNamesData"
-                messages:bind="messages"
-                undefineds:bind="undefineds"
-                viewModelEditorError:bind="viewModelEditorError"
-                updateValues:from="updateValues"
-                expandedKeys:to="expandedKeys"
-                breakpoints:bind="breakpoints"
-                breakpointsError:bind="breakpointsError"
-                addBreakpoint:from="addBreakpoint"
-                toggleBreakpoint:from="toggleBreakpoint"
-                deleteBreakpoint:from="deleteBreakpoint"
-            ></components-panel>
-        {{/ if }}
-    `,
+	static get props() {
+		return {
+			// general component data
+			panelError: {
+				value({ listenTo, lastSet, resolve }) {
+					listenTo(lastSet, resolve);
+					// when a new node is selected, reset the error
+					listenTo("selectedNode", () => {
+						resolve(undefined);
+					});
+				}
+			},
 
-    ViewModel: {
-        connectedCallback() {
-            const vm = this;
-            let stopRefreshingViewModelData = () => {};
+			// Component Tree data
+			componentTree: type.convert(ObservableArray),
 
-            vm.listenTo("selectedNode", (ev, node) => {
-                if (node && "id" in node) {
-                    helpers.runDevtoolsFunction({
-                        fnString: `selectComponentById(${node.id})`
-                    });
-                }
+			selectedNode: type.convert(ObservableObject),
 
-                // teardown old polling
-                stopRefreshingViewModelData();
+			// ViewModel Editor data
+			viewModelData: {
+				type: type.convert(ObservableObject),
+				value({ listenTo, lastSet, resolve }) {
+					listenTo(lastSet, resolve);
+					// when a new node is selected, reset the data
+					listenTo("selectedNode", () => {
+						resolve(new ObservableObject());
+					});
+				}
+			},
 
-                stopRefreshingViewModelData = helpers.runDevtoolsFunction({
-                    fn: () => {
-                        return "getViewModelData(__CANJS_DEVTOOLS__.$0, { expandedKeys: [ '" +
-                                    this.expandedKeys.serialize().join("', '") +
-                                "' ] } )";
-                    },
-                    refreshInterval: 100,
-                    success(result) {
-                        const status = result.status;
-                        const detail = result.detail;
+			typeNamesData: {
+				type: type.convert(ObservableObject),
+				value({ listenTo, lastSet, resolve }) {
+					listenTo(lastSet, resolve);
+					// when a new node is selected, reset the data
+					listenTo("selectedNode", () => {
+						resolve(new ObservableObject());
+					});
+				}
+			},
 
-                        switch(status) {
-                            case "ignore":
-                                break;
-                            case "error":
-                                vm.viewModelEditorError = detail;
-                                break;
-                            case "success":
-                                Reflect.updateDeep(vm.viewModelData, detail.viewModelData || {});
-                                vm.typeNamesData = detail.typeNames || {};
-                                vm.messages = detail.messages || {};
-                                vm.undefineds = detail.undefineds || [];
-                                break;
-                        }
-                    }
-                });
-            });
+			messages: {
+				type: type.convert(ObservableObject),
+				value({ listenTo, lastSet, resolve }) {
+					listenTo(lastSet, resolve);
+					// when a new node is selected, reset the data
+					listenTo("selectedNode", () => {
+						resolve(new ObservableObject());
+					});
+				}
+			},
 
-            const stopRefreshingComponentTree = helpers.runDevtoolsFunction({
-                fnString: "getComponentTreeData()",
-                refreshInterval: 2000,
-                success(result) {
-                    const status = result.status;
-                    const detail = result.detail;
+			undefineds: {
+				type: type.convert(ObservableArray),
+				value({ listenTo, lastSet, resolve }) {
+					listenTo(lastSet, resolve);
+					// when a new node is selected, reset the data
+					listenTo("selectedNode", () => {
+						resolve(new ObservableArray());
+					});
+				}
+			},
 
-                    switch(status) {
-                        case "ignore":
-                            break;
-                        case "error":
-                            vm.breakpointsError = detail;
-                            break;
-                        case "success":
-                            vm.componentTree.updateDeep(detail.tree || []);
+			expandedKeys: type.convert(ObservableArray),
+			viewModelEditorError: String,
 
-                            // restore breakpoints stored in background script (via helpers).
-                            // this is done after tree data is loaded so that observation can
-                            // be created on component's viewmodel for each breakpoint.
-                            const storedBreakpoints = helpers.storedBreakpoints || [];
+			// Breakpoints Panel data
+			breakpointsError: {
+				value({ listenTo, lastSet, resolve }) {
+					listenTo(lastSet, resolve);
+					// when a new node is selected, reset the error
+					listenTo("selectedNode", () => {
+						resolve(undefined);
+					});
+				}
+			},
 
-                            storedBreakpoints.forEach((bp, index) => {
-                                if (!bp.restored) {
-                                    let { expression, path, observationExpression, enabled } = bp;
+			breakpoints: type.convert(ObservableArray)
+		};
+	}
 
-                                    const node = path.split(".").reduce((parent, key) => {
-                                        return parent && parent[key];
-                                    }, detail.tree);
+	// ViewModel Editor functions
+	updateValues(data) {
+		helpers.runDevtoolsFunction({
+			fnString:
+				"updateViewModel(__CANJS_DEVTOOLS__.$0, " + JSON.stringify(data) + ")"
+		});
+	}
 
-                                    // if node does not exist in tree, do not set up breakpoint
-                                    if (node && node.id) {
-                                        helpers.runDevtoolsFunction({
-                                            // indentation below is weird on purpose
-                                            // this is so it looks normal when a debugger is hit
-                                            fnString:
-`addBreakpoint(
-    ${ helpers.getBreakpointEvalString({ expression, selectedComponentStatement: `window.__CANJS_DEVTOOLS__.getComponentById(${node.id})`, observationExpression, displayExpression: expression, pathStatement: `"${path}"`, enabled }) }
-)`,
-                                            success(result) {
-                                                const status = result.status;
-                                                const detail = result.detail;
+	// Breakpoints Panel functions
+	addBreakpoint(expression) {
+		const vm = this;
 
-                                                switch(status) {
-                                                    case "error":
-                                                        vm.breakpointsError = detail;
-                                                        break;
-                                                    case "success":
-                                                        vm.breakpoints = detail.breakpoints;
+		helpers.runDevtoolsFunction({
+			// indentation below is weird on purpose
+			// this is so it looks normal when a debugger is hit
+			fnString: `addBreakpoint(${helpers.getBreakpointEvalString({
+				expression
+			})})`,
+			success(result) {
+				const status = result.status;
+				const detail = result.detail;
 
-                                                        // mark breakpoint once it has been restored so it will not be restored again
-                                                        helpers.storedBreakpoints[index].restored = true;
-                                                        break;
-                                                }
-                                            }
-                                        });
-                                    }
-                                }
-                            });
-                            break;
-                    };
-                }
-            });
+				switch (status) {
+					case "error":
+						vm.breakpointsError = detail;
+						break;
+					case "success":
+						vm.breakpoints = detail.breakpoints;
+						break;
+				}
+			}
+		});
+	}
 
-            // get breakpoints data
-            helpers.runDevtoolsFunction({
-                fnString: "getBreakpoints()",
-                refreshInterval: 100,
-                success(result) {
-                    const status = result.status;
-                    const detail = result.detail;
+	toggleBreakpoint(breakpoint) {
+		const vm = this;
 
-                    if (status === "success") {
-                        vm.breakpoints.updateDeep(detail.breakpoints || []);
-                    }
-                }
-            });
+		helpers.runDevtoolsFunction({
+			fnString: `toggleBreakpoint( ${breakpoint.id} )`,
+			success(result) {
+				const status = result.status;
+				const detail = result.detail;
 
-            return () => {
-                stopRefreshingComponentTree();
-                stopRefreshingViewModelData();
-            };
-        },
+				if (status === "success") {
+					vm.breakpoints = detail.breakpoints;
+				}
+			}
+		});
+	}
 
-        // general component data
-        error: {
-            value({ listenTo, lastSet, resolve }) {
-                listenTo(lastSet, resolve);
-                // when a new node is selected, reset the error
-                listenTo("selectedNode", () => {
-                    resolve(undefined);
-                });
-            }
-        },
+	deleteBreakpoint(breakpoint) {
+		const vm = this;
 
-        // Component Tree data
-        componentTree: DefineList,
-        selectedNode: DefineMap,
+		helpers.runDevtoolsFunction({
+			fnString: `deleteBreakpoint( ${breakpoint.id} )`,
+			success(result) {
+				const status = result.status;
+				const detail = result.detail;
 
-        // ViewModel Editor data
-        viewModelData: {
-            value({ listenTo, lastSet, resolve }) {
-                listenTo(lastSet, resolve);
-                // when a new node is selected, reset the data
-                listenTo("selectedNode", () => {
-                    resolve(new DefineMap({}) );
-                });
-            }
-        },
-        typeNamesData: {
-            value({ listenTo, lastSet, resolve }) {
-                listenTo(lastSet, resolve);
-                // when a new node is selected, reset the data
-                listenTo("selectedNode", () => {
-                    resolve(new DefineMap({}) );
-                });
-            }
-        },
-        messages: {
-            value({ listenTo, lastSet, resolve }) {
-                listenTo(lastSet, resolve);
-                // when a new node is selected, reset the data
-                listenTo("selectedNode", () => {
-                    resolve(new DefineMap({}) );
-                });
-            }
-        },
-        undefineds: {
-            value({ listenTo, lastSet, resolve }) {
-                listenTo(lastSet, resolve);
-                // when a new node is selected, reset the data
-                listenTo("selectedNode", () => {
-                    resolve(new DefineList({}) );
-                });
-            }
-        },
-        expandedKeys: DefineList,
-        viewModelEditorError: "string",
+				if (status === "success") {
+					vm.breakpoints = detail.breakpoints;
+				}
+			}
+		});
+	}
 
-        // Breakpoints Panel data
-        breakpointsError: {
-            value({ listenTo, lastSet, resolve }) {
-                listenTo(lastSet, resolve);
-                // when a new node is selected, reset the error
-                listenTo("selectedNode", () => {
-                    resolve(undefined);
-                });
-            }
-        },
-        breakpoints: DefineList,
+	connected() {
+		const vm = this;
+		let stopRefreshingViewModelData = () => {};
 
-        // ViewModel Editor functions
-        updateValues(data) {
-            helpers.runDevtoolsFunction({
-                fnString: "updateViewModel(__CANJS_DEVTOOLS__.$0, " + JSON.stringify(data) + ")"
-            });
-        },
+		vm.listenTo("selectedNode", (ev, node) => {
+			if (node && "id" in node) {
+				helpers.runDevtoolsFunction({
+					fnString: `selectComponentById(${node.id})`
+				});
+			}
 
-        // Breakpoints Panel functions
-        addBreakpoint(expression) {
-            const vm = this;
+			// teardown old polling
+			stopRefreshingViewModelData();
 
-            helpers.runDevtoolsFunction({
-                // indentation below is weird on purpose
-                // this is so it looks normal when a debugger is hit
-                fnString:
-`addBreakpoint(
-    ${ helpers.getBreakpointEvalString({ expression }) }
-)`,
-                success(result) {
-                    const status = result.status;
-                    const detail = result.detail;
+			stopRefreshingViewModelData = helpers.runDevtoolsFunction({
+				fn: () => {
+					return `getViewModelData(__CANJS_DEVTOOLS__.$0, { expandedKeys: [ '${this.expandedKeys
+						.serialize()
+						.join("', '")}' ] } )`;
+				},
+				refreshInterval: 100,
+				success(result) {
+					const status = result.status;
+					const detail = result.detail;
 
-                    switch(status) {
-                        case "error":
-                            vm.breakpointsError = detail;
-                            break;
-                        case "success":
-                            vm.breakpoints = detail.breakpoints;
-                            break;
-                    }
-                }
-            });
-        },
+					switch (status) {
+						case "ignore":
+							break;
+						case "error":
+							vm.viewModelEditorError = detail;
+							break;
+						case "success":
+							Reflect.updateDeep(vm.viewModelData, detail.viewModelData || {});
+							vm.typeNamesData = detail.typeNames || {};
+							vm.messages = detail.messages || {};
+							vm.undefineds = detail.undefineds || [];
+							break;
+					}
+				}
+			});
+		});
 
-        toggleBreakpoint(breakpoint) {
-            const vm = this;
+		const stopRefreshingComponentTree = helpers.runDevtoolsFunction({
+			fnString: "getComponentTreeData()",
+			refreshInterval: 2000,
+			success(result) {
+				const status = result.status;
+				const detail = result.detail;
 
-            helpers.runDevtoolsFunction({
-                fnString: `toggleBreakpoint( ${breakpoint.id} )`,
-                success(result) {
-                    const status = result.status;
-                    const detail = result.detail;
+				switch (status) {
+					case "ignore":
+						break;
+					case "error":
+						vm.breakpointsError = detail;
+						break;
+					case "success": {
+						vm.componentTree.updateDeep(detail.tree || []);
 
-                    if (status === "success") {
-                        vm.breakpoints = detail.breakpoints;
-                    }
-                }
-            });
-        },
+						// restore breakpoints stored in background script (via helpers).
+						// this is done after tree data is loaded so that observation can
+						// be created on component's viewmodel for each breakpoint.
+						const storedBreakpoints = helpers.storedBreakpoints || [];
 
-        deleteBreakpoint(breakpoint) {
-            const vm = this;
+						storedBreakpoints.forEach((bp, index) => {
+							if (!bp.restored) {
+								let { expression, path, observationExpression, enabled } = bp;
 
-            helpers.runDevtoolsFunction({
-                fnString: `deleteBreakpoint( ${breakpoint.id} )`,
-                success(result) {
-                    const status = result.status;
-                    const detail = result.detail;
+								const node = path.split(".").reduce((parent, key) => {
+									return parent && parent[key];
+								}, detail.tree);
 
-                    if (status === "success") {
-                        vm.breakpoints = detail.breakpoints;
-                    }
-                }
-            });
-        }
-    }
-});
+								// if node does not exist in tree, do not set up breakpoint
+								if (node && node.id) {
+									helpers.runDevtoolsFunction({
+										// indentation below is weird on purpose
+										// this is so it looks normal when a debugger is hit
+										fnString: `addBreakpoint(${helpers.getBreakpointEvalString({
+											expression,
+											selectedComponentStatement: `window.__CANJS_DEVTOOLS__.getComponentById(${node.id})`,
+											observationExpression,
+											displayExpression: expression,
+											pathStatement: `"${path}"`,
+											enabled
+										})})`,
+										success(result) {
+											const status = result.status;
+											const detail = result.detail;
+
+											switch (status) {
+												case "error":
+													vm.breakpointsError = detail;
+													break;
+												case "success":
+													vm.breakpoints = detail.breakpoints;
+
+													// mark breakpoint once it has been restored so it will not be restored again
+													helpers.storedBreakpoints[index].restored = true;
+													break;
+											}
+										}
+									});
+								}
+							}
+						});
+						break;
+					}
+				}
+			}
+		});
+
+		// get breakpoints data
+		helpers.runDevtoolsFunction({
+			fnString: "getBreakpoints()",
+			refreshInterval: 100,
+			success(result) {
+				const status = result.status;
+				const detail = result.detail;
+
+				if (status === "success") {
+					vm.breakpoints.updateDeep(detail.breakpoints || []);
+				}
+			}
+		});
+
+		return () => {
+			stopRefreshingComponentTree();
+			stopRefreshingViewModelData();
+		};
+	}
+}
+
+customElements.define("canjs-devtools-panel", CanjsDevtoolsPanel);

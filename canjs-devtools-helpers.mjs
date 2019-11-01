@@ -1,231 +1,237 @@
 const helpers = {
-    frameChangeHandlers: [],
+	frameChangeHandlers: [],
 
-    onFrameChange(fn) {
-      this.frameChangeHandlers.push(fn);
-    },
+	onFrameChange(fn) {
+		this.frameChangeHandlers.push(fn);
+	},
 
-    offFrameChange(fn) {
-      const index = this.frameChangeHandlers.indexOf(fn);
-      if (index > -1) {
-        this.frameChangeHandlers.splice(index, 1);
-      }
-    },
+	offFrameChange(fn) {
+		const index = this.frameChangeHandlers.indexOf(fn);
+		if (index > -1) {
+			this.frameChangeHandlers.splice(index, 1);
+		}
+	},
 
-    runFrameChangeHandlers() {
-      // copy handlers to new array
-      // since calling the handlers will add to the original array
-      const handlers = this.frameChangeHandlers.slice(0);
+	runFrameChangeHandlers() {
+		// copy handlers to new array
+		// since calling the handlers will add to the original array
+		const handlers = this.frameChangeHandlers.slice(0);
 
-      // reset handlers
-      this.frameChangeHandlers = [];
+		// reset handlers
+		this.frameChangeHandlers = [];
 
-      // call handlers in new array
-      for (let handler of handlers) {
-        handler();
-      }
-    },
+		// call handlers in new array
+		for (let handler of handlers) {
+			handler();
+		}
+	},
 
-    // URLs of all frames that have registered that they
-    // have a global `can` present
-    _registeredFrames: {},
+	// URLs of all frames that have registered that they
+	// have a global `can` present
+	_registeredFrames: {},
 
-    get registeredFrames() {
-      return this._registeredFrames;
-    },
+	get registeredFrames() {
+		return this._registeredFrames;
+	},
 
-    set registeredFrames(frames) {
-      this._registeredFrames = frames;
-      this.runFrameChangeHandlers();
-    },
+	set registeredFrames(frames) {
+		this._registeredFrames = frames;
+		this.runFrameChangeHandlers();
+	},
 
-    // breakpoints loaded from background script when page is loaded
-    storedBreakpoints: [],
+	// breakpoints loaded from background script when page is loaded
+	storedBreakpoints: [],
 
-    runDevtoolsFunction(options) {
-        const timeoutIds = [];
+	runDevtoolsFunction(options) {
+		const timeoutIds = [];
 
-        const runDevtoolsFunctionForUrl = (url) => {
-            const refreshDataForThisUrl = () => {
-                if (options.refreshInterval) {
-                    const timeoutId = setTimeout(() => {
-                        runDevtoolsFunctionForUrl(url);
-                    }, options.refreshInterval);
+		const runDevtoolsFunctionForUrl = url => {
+			const refreshDataForThisUrl = () => {
+				if (options.refreshInterval) {
+					const timeoutId = setTimeout(() => {
+						runDevtoolsFunctionForUrl(url);
+					}, options.refreshInterval);
 
-                    timeoutIds.push(timeoutId);
-                }
-            };
+					timeoutIds.push(timeoutId);
+				}
+			};
 
-            if (helpers.registeredFrames[url]) {
-                chrome.devtools.inspectedWindow.eval(
-                    `typeof __CANJS_DEVTOOLS__ === 'object' && __CANJS_DEVTOOLS__.${options.fn ? options.fn() : options.fnString}`,
-                    { frameURL: url },
-                    (result, exception) => {
-                        if (exception) {
-                            refreshDataForThisUrl();
-                            return;
-                        }
+			if (helpers.registeredFrames[url]) {
+				chrome.devtools.inspectedWindow.eval(
+					`typeof __CANJS_DEVTOOLS__ === 'object' && __CANJS_DEVTOOLS__.${
+						options.fn ? options.fn() : options.fnString
+					}`,
+					{ frameURL: url },
+					(result, exception) => {
+						if (exception) {
+							refreshDataForThisUrl();
+							return;
+						}
 
-                        if (options.success) {
-                            options.success(result);
-                        }
+						if (options.success) {
+							options.success(result);
+						}
 
-                        refreshDataForThisUrl();
-                    }
-                );
-            } else {
-                if (options.success) {
-                    // if there were frames before, and there are no frames now
-                    // reset data to the "empty" state
-                    options.success({
-                        status: "success",
-                        detail: {}
-                    });
-                }
-            }
-        };
+						refreshDataForThisUrl();
+					}
+				);
+			} else {
+				if (options.success) {
+					// if there were frames before, and there are no frames now
+					// reset data to the "empty" state
+					options.success({
+						status: "success",
+						detail: {}
+					});
+				}
+			}
+		};
 
-        // teardown function
-        const teardown = () => {
-            timeoutIds.forEach((id) => {
-                clearTimeout(id);
-            });
+		// teardown function
+		const teardown = () => {
+			timeoutIds.forEach(id => {
+				clearTimeout(id);
+			});
 
-            this.offFrameChange(frameChangeHandler);
-        };
+			this.offFrameChange(frameChangeHandler);
+		};
 
-        const frameChangeHandler = () => {
-          // remove old `refreshDataForThisUrl` timeouts
-          teardown();
+		const frameChangeHandler = () => {
+			// remove old `refreshDataForThisUrl` timeouts
+			teardown();
 
-          // run function for all new frames
-          runDevtoolsFunctionForAllUrls();
-        };
+			// run function for all new frames
+			runDevtoolsFunctionForAllUrls();
+		};
 
-        const runDevtoolsFunctionForAllUrls = () => {
-            const frameURLs = Object.keys(helpers.registeredFrames);
+		const runDevtoolsFunctionForAllUrls = () => {
+			const frameURLs = Object.keys(helpers.registeredFrames);
 
-            if (frameURLs.length) {
-                frameURLs.forEach((url) => {
-                    runDevtoolsFunctionForUrl(url);
-                });
-            }
+			if (frameURLs.length) {
+				frameURLs.forEach(url => {
+					runDevtoolsFunctionForUrl(url);
+				});
+			}
 
-            // when a frame is added or removed
-            // remove the old refresh handlers
-            // and re-create them
-            this.onFrameChange(frameChangeHandler);
-        };
+			// when a frame is added or removed
+			// remove the old refresh handlers
+			// and re-create them
+			this.onFrameChange(frameChangeHandler);
+		};
 
-        runDevtoolsFunctionForAllUrls();
+		runDevtoolsFunctionForAllUrls();
 
-        return teardown;
-    },
+		return teardown;
+	},
 
-    getSafeKey(key, prependStr) {
-        const parts = key.split(".");
-        let last = "";
+	getSafeKey(key, prependStr) {
+		const parts = key.split(".");
+		let last = "";
 
-        const safeParts = parts.reduce((newParts, key) => {
-            last = last ? `${last}.${key}` : `${prependStr}.${key}`;
-            newParts.push(last);
-            return newParts;
-        }, []);
+		const safeParts = parts.reduce((newParts, key) => {
+			last = last ? `${last}.${key}` : `${prependStr}.${key}`;
+			newParts.push(last);
+			return newParts;
+		}, []);
 
-        if (parts.length > 1) {
-            return `(${safeParts.join(" && ")})`;
-        } else {
-            return safeParts.join(" && ");
-        }
-    },
+		if (parts.length > 1) {
+			return `(${safeParts.join(" && ")})`;
+		} else {
+			return safeParts.join(" && ");
+		}
+	},
 
-    getObservationExpression(expression) {
-        return expression.replace(/(^|\s|=|>|<|!|\/|%|\+|-|\*|&|\(|\)|~|\?|,|\[|\])([A-Za-z_:.]*)/g, (match, delimiter, key) => {
-            return `${delimiter}${key ? this.getSafeKey(key, "vm") : ""}`;
-        });
-    },
+	getObservationExpression(expression) {
+		return expression.replace(
+			/(^|\s|=|>|<|!|\/|%|\+|-|\*|&|\(|\)|~|\?|,|\[|\])([A-Za-z_:.]*)/g,
+			(match, delimiter, key) => {
+				return `${delimiter}${key ? this.getSafeKey(key, "vm") : ""}`;
+			}
+		);
+	},
 
-    getDisplayExpression(expression) {
-        return expression.replace(/(^|\s|=|>|<|!|\/|%|\+|-|\*|&|\(|\)|~|\?|,|\[|\])([A-Za-z_])/g, (match, delimiter, prop) => {
-            return `${delimiter}\$\{vmName\}.${prop}`;
-        });
-    },
+	getDisplayExpression(expression) {
+		return expression.replace(
+			/(^|\s|=|>|<|!|\/|%|\+|-|\*|&|\(|\)|~|\?|,|\[|\])([A-Za-z_])/g,
+			(match, delimiter, prop) => {
+				return `${delimiter}\$\{vmName\}.${prop}`;
+			}
+		);
+	},
 
-    isBooleanExpression(expression) {
-        return /[!=<>]/.test(expression);
-    },
+	isBooleanExpression(expression) {
+		return /[!=<>]/.test(expression);
+	},
 
-    getBreakpointEvalString({
-        expression,
-        enabled = true,
-        observationExpression = this.getObservationExpression(expression),
-        selectedComponentStatement = "window.__CANJS_DEVTOOLS__.$0",
-        displayExpression = this.getDisplayExpression(expression),
-        pathStatement = "window.__CANJS_DEVTOOLS__.pathOf$0",
-        debuggerStatement = "debugger" // overwritable for testing
-    }) {
-        const isBooleanExpression = this.isBooleanExpression(observationExpression);
+	getBreakpointEvalString({
+		expression,
+		enabled = true,
+		observationExpression = this.getObservationExpression(expression),
+		selectedComponentStatement = "window.__CANJS_DEVTOOLS__.$0",
+		displayExpression = this.getDisplayExpression(expression),
+		pathStatement = "window.__CANJS_DEVTOOLS__.pathOf$0",
+		debuggerStatement = "debugger" // overwritable for testing
+	}) {
+		const isBooleanExpression = this.isBooleanExpression(observationExpression);
 
-        return `(function() {
-        const Observation = window.__CANJS_DEVTOOLS__.canObservation;
-        const queues = window.__CANJS_DEVTOOLS__.canQueues;
-        const selectedComponent = ${selectedComponentStatement};
+		return `(function() {
+				const Observation = window.__CANJS_DEVTOOLS__.canObservation;
+				const queues = window.__CANJS_DEVTOOLS__.canQueues;
+				const selectedComponent = ${selectedComponentStatement};
 
-        if (!selectedComponent) {
-            return { error: "Please select a component in order to create a mutation breakpoint for its ViewModel" };
-        }
+				if (!selectedComponent) {
+						return { error: "Please select a component in order to create a mutation breakpoint for its ViewModel" };
+				}
 
-        const vm = selectedComponent[Symbol.for('can.viewModel')];
-        const vmName = window.__CANJS_DEVTOOLS__.canReflect.getName(vm);
-        let oldValue = ${observationExpression};
+				const vm = selectedComponent[Symbol.for('can.viewModel')];
+				const vmName = window.__CANJS_DEVTOOLS__.canReflect.getName(vm);
+				let oldValue = ${observationExpression};
 
-        const observation = new Observation(() => {
-            return ${observationExpression};
-        });
-        const origDependencyChange = observation.dependencyChange;
+				const observation = new Observation(() => {
+						return ${observationExpression};
+				});
+				const origDependencyChange = observation.dependencyChange;
 
-        observation.dependencyChange = function() {
-            const newValue = ${observationExpression};
-            ${ isBooleanExpression ?
-            `if (newValue == true && oldValue != true) {
-                queues.logStack();
-                ${debuggerStatement};
-            }` :
-            `queues.logStack();
-            ${debuggerStatement};`
-            }
-            oldValue = newValue;
+				observation.dependencyChange = function() {
+						const newValue = ${observationExpression};
+						${
+							isBooleanExpression
+								? `if (newValue == true && oldValue != true) { queues.logStack(); ${debuggerStatement}; }`
+								: `queues.logStack();
+							${debuggerStatement};`
+						}
+						oldValue = newValue;
 
-            return origDependencyChange.apply(this, arguments);
-        };
+						return origDependencyChange.apply(this, arguments);
+				};
 
-        return {
-            expression: \`${displayExpression}\`,
-            observation: observation,
-            observationExpression: \`${observationExpression}\`,
-            path: ${pathStatement},
-            enabled: ${enabled}
-        };
-    }())`
-    }
+				return {
+						expression: \`${displayExpression}\`,
+						observation: observation,
+						observationExpression: \`${observationExpression}\`,
+						path: ${pathStatement},
+						enabled: ${enabled}
+				};
+		}())`;
+	}
 };
 
 if (typeof chrome === "object" && chrome.runtime && chrome.runtime.onMessage) {
-    // listen to messages from the background script
-    chrome.runtime.onMessage.addListener((msg, sender) => {
-        switch(msg.type) {
-            case  "__CANJS_DEVTOOLS_UPDATE_FRAMES__":
-                helpers.registeredFrames = msg.frames;
-                break;
-            case  "__CANJS_DEVTOOLS_UPDATE_BREAKPOINTS__":
-                helpers.storedBreakpoints = msg.breakpoints;
-                break;
-        }
-    });
+	// listen to messages from the background script
+	chrome.runtime.onMessage.addListener((msg, sender) => {
+		switch (msg.type) {
+			case "__CANJS_DEVTOOLS_UPDATE_FRAMES__":
+				helpers.registeredFrames = msg.frames;
+				break;
+			case "__CANJS_DEVTOOLS_UPDATE_BREAKPOINTS__":
+				helpers.storedBreakpoints = msg.breakpoints;
+				break;
+		}
+	});
 
-    // when a devtools panel is opened, request an updated list of frames
-    var port = chrome.runtime.connect({ name: "canjs-devtools" });
-    port.postMessage({ type: "canjs-devtools-loaded" });
+	// when a devtools panel is opened, request an updated list of frames
+	var port = chrome.runtime.connect({ name: "canjs-devtools" });
+	port.postMessage({ type: "canjs-devtools-loaded" });
 }
 
 export default helpers;

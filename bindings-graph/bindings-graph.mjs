@@ -1,89 +1,119 @@
-import { Component, DefineMap, DefineList } from "../node_modules/can-devtools-components/dist/bindings-graph.mjs";
+import {
+	ObservableArray,
+	ObservableObject,
+	StacheElement,
+	type
+} from "../node_modules/can-devtools-components/dist/bindings-graph.mjs";
 
 import helpers from "../canjs-devtools-helpers.mjs";
 
-Component.extend({
-    tag: "canjs-devtools-bindings-graph",
+class CanjsDevtoolsBindingsGraph extends StacheElement {
+	static get view() {
+		return `
+			{{# if(this.bindingsError) }}
+				<h2>{{{ this.bindingsError }}}</h2>
+			{{ else }}
+				{{# unless(this.selectedObj) }}
+					<h2>Select an element to see its bindings graph</h2>
+				{{ else }}
+					<bindings-graph
+						graphData:from="this.graphData"
+						availableKeys:from="this.availableKeys"
+						selectedObj:from="this.selectedObj"
+						selectedKey:bind="this.selectedKey"
+					></bindings-graph>
+				{{/unless}}
+			{{/if}}
+		`;
+	}
 
-    view: `
-        {{#if error}}
-            <h2>{{{error}}}</h2>
-        {{else}}
-            {{#unless selectedObj}}
-                <h2>Select an element to see its bindings graph</h2>
-            {{else}}
-                <bindings-graph
-                    graphData:from="graphData"
-                    availableKeys:from="availableKeys"
-                    selectedObj:from="selectedObj"
-                    selectedKey:bind="selectedKey"
-                ></bindings-graph>
-            {{/unless}}
-        {{/if}}
-    `,
+	static get props() {
+		return {
+			graphData: {
+				type: type.convert(ObservableObject),
 
-    ViewModel: {
-        graphData: { Type: DefineMap, Default: DefineMap },
-        availableKeys: { Type: DefineList, Default: DefineList },
-        selectedObj: "string",
-        selectedKey: "string",
-        error: "string",
+				get default() {
+					return new ObservableObject();
+				}
+			},
 
-        connectedCallback() {
-            var vm = this;
+			availableKeys: {
+				type: type.convert(ObservableArray),
 
-            var loadGraphData = function() {
-                helpers.runDevtoolsFunction({
-                    fnString: "getBindingsGraphData($0, '" + vm.selectedKey + "')",
-                    success: function(result) {
-                        var status = result.status;
-                        var detail = result.detail;
+				get default() {
+					return new ObservableArray();
+				}
+			},
 
-                        switch(status) {
-                            case "ignore":
-                                break;
-                            case "error":
-                                vm.error = detail;
-                                break;
-                            case "success":
-                                vm.error = null;
-                                vm.selectedObj = detail.selectedObj;
-                                vm.availableKeys.replace(detail.availableKeys);
-                                if (detail.graphData) {
-                                    vm.graphData = detail.graphData;
-                                } else {
-                                    Reflect.deleteKeyValue(vm, "graphData");
-                                }
-                                break;
-                        }
-                    }
-                });
-            };
+			selectedObj: String,
+			selectedKey: String,
+			bindingsError: String
+		};
+	}
 
-            // there is a slight delay between when the devtools panel is opened
-            // and when $0 will be set correctly so that the graph data can be returned
-            // so this sets up polling to load the initial data.
-            // once the data is inititally loaded, polling is not necessary because it
-            // will be updated by the `onSelectionChanged` handler below.
-            (function loadInitialGraphData() {
-                // load initial data
-                loadGraphData();
+	connected() {
+		var vm = this;
 
-                if (!vm.selectedObj) {
-                    setTimeout(loadInitialGraphData, 100);
-                }
-            }());
+		var loadGraphData = function() {
+			helpers.runDevtoolsFunction({
+				fnString: "getBindingsGraphData($0, '" + vm.selectedKey + "')",
+				success: function(result) {
+					var status = result.status;
+					var detail = result.detail;
 
-            // update graph data when user selects a new element
-            chrome.devtools.panels.elements.onSelectionChanged.addListener(loadGraphData);
+					switch (status) {
+						case "ignore":
+							break;
+						case "error":
+							vm.bindingsError = detail;
+							break;
+						case "success":
+							vm.bindingsError = null;
+							vm.selectedObj = detail.selectedObj;
+							vm.availableKeys.replace(detail.availableKeys);
+							if (detail.graphData) {
+								vm.graphData = detail.graphData;
+							} else {
+								Reflect.deleteKeyValue(vm, "graphData");
+							}
+							break;
+					}
+				}
+			});
+		};
 
-            // update graph data when user selects a new property
-            this.listenTo("selectedKey", loadGraphData);
+		// there is a slight delay between when the devtools panel is opened
+		// and when $0 will be set correctly so that the graph data can be returned
+		// so this sets up polling to load the initial data.
+		// once the data is inititally loaded, polling is not necessary because it
+		// will be updated by the `onSelectionChanged` handler below.
+		(function loadInitialGraphData() {
+			// load initial data
+			loadGraphData();
 
-            return function() {
-                this.stopListening();
-                chrome.devtools.panels.elements.onSelectionChanged.removeListener(loadGraphData);
-            };
-        }
-    }
-});
+			if (!vm.selectedObj) {
+				setTimeout(loadInitialGraphData, 100);
+			}
+		})();
+
+		// update graph data when user selects a new element
+		chrome.devtools.panels.elements.onSelectionChanged.addListener(
+			loadGraphData
+		);
+
+		// update graph data when user selects a new property
+		this.listenTo("selectedKey", loadGraphData);
+
+		return function() {
+			this.stopListening();
+			chrome.devtools.panels.elements.onSelectionChanged.removeListener(
+				loadGraphData
+			);
+		};
+	}
+}
+
+customElements.define(
+	"canjs-devtools-bindings-graph",
+	CanjsDevtoolsBindingsGraph
+);

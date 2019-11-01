@@ -9,9 +9,9 @@ document.addEventListener("__CANJS_DEVTOOLS_EVENT__", function(ev) {
 // inject script into page to add __CANJS_DEVTOOLS__ namespace to window
 // and register page with devtools extension
 function injectScript(el) {
-    var s = document.createElement("script");
-    s.src = chrome.extension.getURL("canjs-devtools-injected-script.js");
-    el.appendChild(s);
+	var s = document.createElement("script");
+	s.src = chrome.extension.getURL("canjs-devtools-injected-script.js");
+	el.appendChild(s);
 }
 
-injectScript( document.documentElement );
+injectScript(document.documentElement);
