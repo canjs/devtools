@@ -1,4 +1,5 @@
 import { assert } from "chai/chai";
+import DefineList from "can-define/list/list";
 import "steal-mocha";
 
 import {
@@ -889,7 +890,7 @@ describe("canjs-devtools-injected-script", () => {
 			"gets viewmodel keys"
 		);
 
-		const list = new ObservableArray([{ one: "two" }, { three: "four" }]);
+		const list = new DefineList([{ one: "two" }, { three: "four" }]);
 		assert.deepEqual(
 			devtools.getViewModelKeys(list),
 			["0", "1"],
