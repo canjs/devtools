@@ -400,15 +400,11 @@ describe("canjs-devtools-injected-script", () => {
 							}
 						},
 						emptyObject: {
-							type: type.Any,
-
 							get default() {
 								return {};
 							}
 						},
 						emptyArray: {
-							type: type.Any,
-
 							get default() {
 								return [];
 							}
@@ -784,8 +780,6 @@ describe("canjs-devtools-injected-script", () => {
 						return this.first + " " + this.last;
 					},
 					hobbies: {
-						type: type.Any,
-
 						get default() {
 							return ["running", "jumping"];
 						}
