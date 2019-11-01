@@ -196,12 +196,9 @@ const helpers = {
 						const newValue = ${observationExpression};
 						${
 							isBooleanExpression
-								? `if (newValue == true && oldValue != true) {
-								queues.logStack();
-								${debuggerStatement};
-						}`
+								? `if (newValue == true && oldValue != true) { queues.logStack(); ${debuggerStatement}; }`
 								: `queues.logStack();
-						${debuggerStatement};`
+							${debuggerStatement};`
 						}
 						oldValue = newValue;
 
