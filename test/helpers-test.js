@@ -321,7 +321,7 @@ describe("canjs-devtools-helpers", () => {
 
 				assert.equal(
 					breakpoint.error,
-					"Please select a component in order to create a mutation breakpoint for its ViewModel"
+					"Please select a component in order to create a mutation breakpoint for its Observable Properties"
 				);
 			});
 
