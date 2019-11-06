@@ -180,7 +180,7 @@ const helpers = {
 				const selectedComponent = ${selectedComponentStatement};
 
 				if (!selectedComponent) {
-						return { error: "Please select a component in order to create a mutation breakpoint for its ViewModel" };
+						return { error: "Please select a component in order to create a mutation breakpoint for its Observable Properties" };
 				}
 
 				const vm = selectedComponent[Symbol.for('can.viewModel')];

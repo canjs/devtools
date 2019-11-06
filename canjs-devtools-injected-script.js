@@ -118,7 +118,7 @@
 
 			if (!elementWithViewModel) {
 				return this.makeIgnoreResponse(
-					"&lt;" + el.tagName.toLowerCase() + "&gt; does not have a viewModel"
+					"&lt;" + el.tagName.toLowerCase() + "&gt; does not have Observable Properties"
 				);
 			}
 
