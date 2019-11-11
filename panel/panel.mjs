@@ -111,7 +111,12 @@ export default class CanjsDevtoolsPanel extends StacheElement {
 				}
 			},
 
-			breakpoints: type.convert(ObservableArray)
+			breakpoints: {
+				type: type.convert(ObservableArray),
+				get default() {
+					return new ObservableArray();
+				}
+			}
 		};
 	}
 
@@ -237,7 +242,7 @@ export default class CanjsDevtoolsPanel extends StacheElement {
 						vm.breakpointsError = detail;
 						break;
 					case "success": {
-						vm.componentTree.updateDeep(detail.tree || []);
+						Reflect.updateDeep(vm.componentTree, detail.tree || []);
 
 						// restore breakpoints stored in background script (via helpers).
 						// this is done after tree data is loaded so that observation can
@@ -300,7 +305,7 @@ export default class CanjsDevtoolsPanel extends StacheElement {
 				const detail = result.detail;
 
 				if (status === "success") {
-					vm.breakpoints.updateDeep(detail.breakpoints || []);
+					Reflect.updateDeep(vm.breakpoints, detail.breakpoints || []);
 				}
 			}
 		});
