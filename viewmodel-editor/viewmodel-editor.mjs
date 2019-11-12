@@ -64,7 +64,7 @@ class CanjsDevtoolsViewmodelEditor extends StacheElement {
 					case "success":
 						// if selected element changed, remove viewModel completely
 						if (vm.tagName !== detail.tagName) {
-							vm.editorError = null;
+							vm.editorError = '';
 							vm.tagName = detail.tagName;
 							vm.viewModelData = detail.viewModelData || {};
 							vm.typeNamesData = detail.typeNames || {};
