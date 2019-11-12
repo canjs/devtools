@@ -28,7 +28,7 @@ function initializeSidebar(name, location, page, height) {
 
 		// initialize all the sidebars
 		initializeSidebar(
-			"CanJS ViewModel",
+			"CanJS Observable Properties",
 			"elements",
 			"viewmodel-editor/index.html"
 		);
