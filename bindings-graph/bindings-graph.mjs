@@ -47,7 +47,7 @@ class CanjsDevtoolsBindingsGraph extends StacheElement {
 
 			selectedObj: String,
 			selectedKey: String,
-			bindingsError: String
+			bindingsError: type.convert(String)
 		};
 	}
 
