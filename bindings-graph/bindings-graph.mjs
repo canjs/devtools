@@ -29,13 +29,7 @@ class CanjsDevtoolsBindingsGraph extends StacheElement {
 
 	static get props() {
 		return {
-			graphData: {
-				type: type.convert(ObservableObject),
-
-				get default() {
-					return new ObservableObject();
-				}
-			},
+			graphData: type.maybeConvert(ObservableObject),
 
 			availableKeys: {
 				type: type.convert(ObservableArray),
@@ -46,8 +40,8 @@ class CanjsDevtoolsBindingsGraph extends StacheElement {
 			},
 
 			selectedObj: String,
-			selectedKey: String,
-			bindingsError: type.convert(String)
+			selectedKey: type.maybe(String),
+			bindingsError: type.maybe(String)
 		};
 	}
 
@@ -70,7 +64,7 @@ class CanjsDevtoolsBindingsGraph extends StacheElement {
 						case "success":
 							vm.bindingsError = null;
 							vm.selectedObj = detail.selectedObj;
-							vm.availableKeys.replace(detail.availableKeys);
+							vm.availableKeys.splice(0, vm.availableKeys.length, ...detail.availableKeys);
 							if (detail.graphData) {
 								vm.graphData = detail.graphData;
 							} else {

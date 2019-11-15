@@ -195,9 +195,7 @@
 			const graphData = formatGraph(getGraph(obj, key));
 
 			return this.makeSuccessResponse({
-				availableKeys: hasViewModel
-					? this.getViewModelKeys(obj)
-					: this.getElementKeys(el),
+				availableKeys: hasViewModel ? this.getViewModelKeys(obj) : this.getElementKeys(el),
 				selectedObj:
 					"<" +
 					el.tagName.toLowerCase() +
