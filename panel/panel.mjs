@@ -1,4 +1,5 @@
 import {
+	DeepObservable,
 	ObservableArray,
 	ObservableObject,
 	Reflect,
@@ -54,12 +55,12 @@ export default class CanjsDevtoolsPanel extends StacheElement {
 
 			// ViewModel Editor data
 			viewModelData: {
-				type: type.convert(ObservableObject),
+				type: DeepObservable,
 				value({ listenTo, lastSet, resolve }) {
 					listenTo(lastSet, resolve);
 					// when a new node is selected, reset the data
 					listenTo("selectedNode", () => {
-						resolve(new ObservableObject());
+						resolve(Reflect.new(DeepObservable, {}));
 					});
 				}
 			},
