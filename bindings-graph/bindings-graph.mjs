@@ -68,9 +68,9 @@ class CanjsDevtoolsBindingsGraph extends StacheElement {
 							vm.bindingsError = detail;
 							break;
 						case "success":
-							vm.bindingsError = null;
+							vm.bindingsError = '';
 							vm.selectedObj = detail.selectedObj;
-							vm.availableKeys.replace(detail.availableKeys);
+							vm.availableKeys.splice(0, vm.availableKeys.length, ...detail.availableKeys);
 							if (detail.graphData) {
 								vm.graphData = detail.graphData;
 							} else {

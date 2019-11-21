@@ -1,4 +1,5 @@
 import {
+	DeepObservable,
 	ObservableArray,
 	ObservableObject,
 	Reflect,
@@ -31,7 +32,7 @@ class CanjsDevtoolsViewmodelEditor extends StacheElement {
 		return {
 			tagName: { type: String, default: "" },
 			editorError: String,
-			viewModelData: type.convert(ObservableObject),
+			viewModelData: type.convert(DeepObservable),
 			typeNamesData: type.convert(ObservableObject),
 			messages: type.convert(ObservableObject),
 			undefineds: type.convert(ObservableArray),

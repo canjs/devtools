@@ -30,6 +30,7 @@ export default class CanjsDevtoolsPanel extends StacheElement {
 					addBreakpoint:from="this.addBreakpoint"
 					toggleBreakpoint:from="this.toggleBreakpoint"
 					deleteBreakpoint:from="this.deleteBreakpoint"
+					tagName:from="this.tagName"
 				></components-panel>
 			{{/ if }}
 		`;
@@ -52,6 +53,10 @@ export default class CanjsDevtoolsPanel extends StacheElement {
 			componentTree: type.convert(ObservableArray),
 
 			selectedNode: type.convert(ObservableObject),
+			tagName: {
+				type: String,
+				get default() { return ""; }
+			},
 
 			// ViewModel Editor data
 			viewModelData: {
@@ -219,6 +224,7 @@ export default class CanjsDevtoolsPanel extends StacheElement {
 							vm.viewModelEditorError = detail;
 							break;
 						case "success":
+							vm.tagName = detail.tagName;
 							Reflect.updateDeep(vm.viewModelData, detail.viewModelData || {});
 							vm.typeNamesData = detail.typeNames || {};
 							vm.messages = detail.messages || {};
