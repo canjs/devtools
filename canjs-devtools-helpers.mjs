@@ -116,7 +116,11 @@ const helpers = {
 			// when a frame is added or removed
 			// remove the old refresh handlers
 			// and re-create them
-			this.onFrameChange(frameChangeHandler);
+			// If the handler *does not* refresh,
+			//   do not rerun it.
+			if(options.refreshInterval) {
+				this.onFrameChange(frameChangeHandler);
+			}
 		};
 
 		runDevtoolsFunctionForAllUrls();
@@ -170,7 +174,8 @@ const helpers = {
 		selectedComponentStatement = "window.__CANJS_DEVTOOLS__.$0",
 		displayExpression = this.getDisplayExpression(expression),
 		pathStatement = "window.__CANJS_DEVTOOLS__.pathOf$0",
-		debuggerStatement = "debugger" // overwritable for testing
+		debuggerStatement = "debugger", // overwritable for testing
+		id
 	}) {
 		const isBooleanExpression = this.isBooleanExpression(observationExpression);
 
@@ -210,7 +215,8 @@ const helpers = {
 						observation: observation,
 						observationExpression: \`${observationExpression}\`,
 						path: ${pathStatement},
-						enabled: ${enabled}
+						enabled: ${enabled},
+						${ typeof id !== "undefined" ? `id: ${id}` : "" }
 				};
 		}())`;
 	}
