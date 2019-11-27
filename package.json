@@ -13,7 +13,7 @@
     "web": "http://bitovi.com/"
   },
   "scripts": {
-    "lint": "eslint . ",
+    "lint": "eslint --ext=js,mjs . ",
     "testee": "testee test/test.html --browsers firefox",
     "testee-mjs": "testee test/mjs-test.html --browsers firefox",
     "test": "npm run lint && npm run testee && npm run testee-mjs"
@@ -27,10 +27,10 @@
   },
   "homepage": "https://canjs.com",
   "dependencies": {
-    "can-devtools-components": "^0.11.10-0"
+    "can-devtools-components": "^0.11.11"
   },
   "devDependencies": {
-    "can": "^6.2.3",
+    "can": "^6.2.7",
     "can-define": "^2.8.0",
     "chai": "^4.2.0",
     "eslint": "^6.5.1",

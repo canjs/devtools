@@ -154,7 +154,7 @@ const helpers = {
 		return expression.replace(
 			/(^|\s|=|>|<|!|\/|%|\+|-|\*|&|\(|\)|~|\?|,|\[|\])([A-Za-z_])/g,
 			(match, delimiter, prop) => {
-				return `${delimiter}\$\{vmName\}.${prop}`;
+				return `${delimiter}$\{vmName}.${prop}`;
 			}
 		);
 	},
@@ -218,7 +218,7 @@ const helpers = {
 
 if (typeof chrome === "object" && chrome.runtime && chrome.runtime.onMessage) {
 	// listen to messages from the background script
-	chrome.runtime.onMessage.addListener((msg, sender) => {
+	chrome.runtime.onMessage.addListener((msg) => {
 		switch (msg.type) {
 			case "__CANJS_DEVTOOLS_UPDATE_FRAMES__":
 				helpers.registeredFrames = msg.frames;
