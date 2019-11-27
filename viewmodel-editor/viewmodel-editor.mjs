@@ -32,7 +32,7 @@ class CanjsDevtoolsViewmodelEditor extends StacheElement {
 		return {
 			tagName: { type: String, default: "" },
 			editorError: String,
-			viewModelData: type.convert(DeepObservable),
+			viewModelData: DeepObservable,
 			typeNamesData: type.convert(ObservableObject),
 			messages: type.convert(ObservableObject),
 			undefineds: type.convert(ObservableArray),

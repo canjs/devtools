@@ -53,10 +53,7 @@ export default class CanjsDevtoolsPanel extends StacheElement {
 			componentTree: type.convert(ObservableArray),
 
 			selectedNode: type.convert(ObservableObject),
-			tagName: {
-				type: String,
-				get default() { return ""; }
-			},
+			tagName: "",
 
 			// ViewModel Editor data
 			viewModelData: {
@@ -224,7 +221,7 @@ export default class CanjsDevtoolsPanel extends StacheElement {
 							vm.viewModelEditorError = detail;
 							break;
 						case "success":
-							vm.tagName = detail.tagName;
+							vm.tagName = detail.tagName || "";
 							Reflect.updateDeep(vm.viewModelData, detail.viewModelData || {});
 							vm.typeNamesData = detail.typeNames || {};
 							vm.messages = detail.messages || {};
