@@ -285,6 +285,7 @@
 			observationExpression,
 			error,
 			enabled = true,
+			id = nextBreakpointId,
 			path
 		}) {
 			if (error) {
@@ -293,14 +294,20 @@
 
 			// serializable data only
 			const breakpoint = {
-				id: nextBreakpointId++,
+				id,
 				expression,
 				observationExpression,
 				enabled,
 				path
 			};
 
-			breakpoints.push(breakpoint);
+			const matching = breakpoints.find(bp => bp.id === id);
+			if(matching) {
+				Object.assign(matching, breakpoint);
+			} else {
+				breakpoints.push(breakpoint);
+			}
+			nextBreakpointId = Math.max(nextBreakpointId, id + 1);
 
 			// send updated list of breakpoints to background script
 			sendEventToBackgroundScript({

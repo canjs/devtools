@@ -253,9 +253,9 @@ export default class CanjsDevtoolsPanel extends StacheElement {
 						// be created on component's viewmodel for each breakpoint.
 						const storedBreakpoints = helpers.storedBreakpoints || [];
 
-						storedBreakpoints.forEach((bp, index) => {
+						storedBreakpoints.forEach((bp) => {
 							if (!bp.restored) {
-								let { expression, path, observationExpression, enabled } = bp;
+								let { expression, path, observationExpression, enabled, id } = bp;
 
 								const node = path.split(".").reduce((parent, key) => {
 									return parent && parent[key];
@@ -272,7 +272,8 @@ export default class CanjsDevtoolsPanel extends StacheElement {
 											observationExpression,
 											displayExpression: expression,
 											pathStatement: `"${path}"`,
-											enabled
+											enabled,
+											id
 										})})`,
 										success(result) {
 											const status = result.status;
@@ -286,7 +287,7 @@ export default class CanjsDevtoolsPanel extends StacheElement {
 													vm.breakpoints = detail.breakpoints;
 
 													// mark breakpoint once it has been restored so it will not be restored again
-													helpers.storedBreakpoints[index].restored = true;
+													bp.restored = true;
 													break;
 											}
 										}
