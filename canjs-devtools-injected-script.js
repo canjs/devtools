@@ -285,7 +285,7 @@
 			observationExpression,
 			error,
 			enabled = true,
-			id = nextBreakpointId++,
+			id = nextBreakpointId,
 			path
 		}) {
 			if (error) {
@@ -301,12 +301,13 @@
 				path
 			};
 
-			const matching = breakpoints.filter(bp => bp.id === id)[0];
+			const matching = breakpoints.find(bp => bp.id === id);
 			if(matching) {
 				Object.assign(matching, breakpoint);
 			} else {
 				breakpoints.push(breakpoint);
 			}
+			nextBreakpointId = Math.max(nextBreakpointId, id + 1);
 
 			// send updated list of breakpoints to background script
 			sendEventToBackgroundScript({
