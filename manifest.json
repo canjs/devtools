@@ -16,11 +16,11 @@
     {
       "all_frames": true,
       "js": ["canjs-devtools-content-script.js"],
-      "matches": ["*://*/*"]
+      "matches": ["<all_urls>"]
     }
   ],
   "web_accessible_resources": ["canjs-devtools-injected-script.js"],
-  "permissions": [],
+  "permissions": ["<all_urls>"],
   "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
   "browser_action": {
     "default_title": "CanJS Devtools",
