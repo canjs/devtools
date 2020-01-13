@@ -256,12 +256,13 @@ export default class CanjsDevtoolsPanel extends StacheElement {
 						const bps = storedBreakpoints.map((bp) => {
 							if (!bp.restored) {
 								let { expression, path, observationExpression, enabled, id } = bp;
-
+								debugger;
 								const node = path.split(".").reduce((parent, key) => {
 									return parent && parent[key];
 								}, detail.tree);
 								
-								if (node && node.id) {
+								// if node does not exist in tree, do not set up breakpoint
+								if (node && typeof node.id !== undefined) {
 									// mark breakpoint once it has been restored so it will not be restored again
 									bp.restored = true;
 									return helpers.getBreakpointEvalString({
@@ -274,18 +275,19 @@ export default class CanjsDevtoolsPanel extends StacheElement {
 										id
 									});
 								}
-							}
-						});
 
-						// if node does not exist in tree, do not set up breakpoint
-						helpers.runDevtoolsFunction({
-							// indentation below is weird on purpose
-							// this is so it looks normal when a debugger is hit
-							fnString: `addBreakpoint(${bps})`,
+							}
+							return bp;
+						});
+						if (bps.length) {
+							helpers.runDevtoolsFunction({
+								// indentation below is weird on purpose
+								// this is so it looks normal when a debugger is hit
+								fnString: `addBreakpoints([ ${bps.join(",")} ])`, //JSON.stringify or [ ${bps.join(",")} ]
 								success(result) {
 									const status = result.status;
 									const detail = result.detail;
-
+	
 									switch (status) {
 										case "error":
 											vm.breakpointsError = detail;
@@ -293,9 +295,10 @@ export default class CanjsDevtoolsPanel extends StacheElement {
 										case "success":
 											vm.breakpoints = detail.breakpoints;
 											break;
+										}
 									}
-								}
-						});
+							});
+						}
 						break;
 					}
 				}
