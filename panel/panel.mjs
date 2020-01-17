@@ -253,10 +253,9 @@ export default class CanjsDevtoolsPanel extends StacheElement {
 						// be created on component's viewmodel for each breakpoint.
 						const storedBreakpoints = helpers.storedBreakpoints || [];
 
-						const bps = storedBreakpoints.map((bp) => {
+						const breakpoints = storedBreakpoints.map((bp) => {
 							if (!bp.restored) {
 								let { expression, path, observationExpression, enabled, id } = bp;
-								debugger;
 								const node = path.split(".").reduce((parent, key) => {
 									return parent && parent[key];
 								}, detail.tree);
@@ -277,13 +276,13 @@ export default class CanjsDevtoolsPanel extends StacheElement {
 								}
 
 							}
-							return bp;
+							//return bp;
 						});
-						if (bps.length) {
+						if (breakpoints.length) {
 							helpers.runDevtoolsFunction({
 								// indentation below is weird on purpose
 								// this is so it looks normal when a debugger is hit
-								fnString: `addBreakpoints([ ${bps.join(",")} ])`, //JSON.stringify or [ ${bps.join(",")} ]
+								fnString: `addBreakpoints([ ${JSON.stringify(breakpoints)} ])`, //JSON.stringify or [ ${bps.join(",")} ]
 								success(result) {
 									const status = result.status;
 									const detail = result.detail;

@@ -330,7 +330,9 @@
 			return this.getBreakpoints();
 		},
 		addBreakpoints(breakpoints) {
-			this.addBreakpoint(breakpoints);
+			breakpoints.forEach(breakpoint => {
+				this.addBreakpoint(breakpoint);
+			});
 			return this.getBreakpoints();
 		},
 
