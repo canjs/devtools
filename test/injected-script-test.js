@@ -1351,4 +1351,19 @@ describe("canjs-devtools-injected-script", () => {
 			assert.equal(resp.detail, "no component", "detail is the error message");
 		});
 	});
+
+	describe('addBreakpoints', () => {
+		it ('adds breakpoints', () => {
+			const breakpoints = devtools.addBreakpoints([{
+				expression: "todos.length"
+			}]).detail.breakpoints;
+			assert.equal(breakpoints.length, 1, "addBreakpoints adds breakpoints");
+			assert.equal(
+				breakpoints[0].expression,
+				"todos.length",
+				"first breakpoint has correct expression"
+			);
+			assert.equal(breakpoints[0].enabled, true, "first breakpoint is enabled");
+		});
+	});
 });
