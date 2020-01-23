@@ -1356,14 +1356,38 @@ describe("canjs-devtools-injected-script", () => {
 		it ('adds breakpoints', () => {
 			const breakpoints = devtools.addBreakpoints([{
 				expression: "todos.length"
+			},
+			{
+				expression: "breakpoint2"
+			},
+			{
+				expression: "anotherBreakpoint",
+				enabled: false
 			}]).detail.breakpoints;
-			assert.equal(breakpoints.length, 1, "addBreakpoints adds breakpoints");
+
+			assert.equal(breakpoints.length, 3, "addBreakpoints adds breakpoints");
+
 			assert.equal(
 				breakpoints[0].expression,
 				"todos.length",
 				"first breakpoint has correct expression"
 			);
+
+			assert.equal(
+				breakpoints[1].expression,
+				"breakpoint2",
+				"second breakpoint has correct expression"
+			);
+
+			assert.equal(
+				breakpoints[2].expression,
+				"anotherBreakpoint",
+				"third breakpoint has correct expression"
+			);
+
 			assert.equal(breakpoints[0].enabled, true, "first breakpoint is enabled");
+			assert.equal(breakpoints[1].enabled, true, "second breakpoint is enabled");
+			assert.equal(breakpoints[2].enabled, false, "third breakpoint is enabled");
 		});
 	});
 });

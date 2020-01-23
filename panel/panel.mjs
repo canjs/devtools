@@ -283,7 +283,7 @@ export default class CanjsDevtoolsPanel extends StacheElement {
 							helpers.runDevtoolsFunction({
 								// indentation below is weird on purpose
 								// this is so it looks normal when a debugger is hit
-								fnString: `addBreakpoints([${breakpoints.join(",")}])`, //JSON.stringify or [ ${bps.join(",")} ]
+								fnString: `addBreakpoints([${breakpoints.join(",")}])`,
 								success(result) {
 									const status = result.status;
 									const detail = result.detail;
