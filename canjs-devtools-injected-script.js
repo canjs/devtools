@@ -329,6 +329,12 @@
 
 			return this.getBreakpoints();
 		},
+		addBreakpoints(breakpoints) {
+			breakpoints.forEach(breakpoint => {
+				this.addBreakpoint(breakpoint);
+			});
+			return this.getBreakpoints();
+		},
 
 		toggleBreakpoint(id) {
 			const index = getIndexOfItemInArrayWithId(breakpoints, id);

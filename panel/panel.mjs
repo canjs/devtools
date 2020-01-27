@@ -253,20 +253,19 @@ export default class CanjsDevtoolsPanel extends StacheElement {
 						// be created on component's viewmodel for each breakpoint.
 						const storedBreakpoints = helpers.storedBreakpoints || [];
 
-						storedBreakpoints.forEach((bp) => {
+						const breakpoints = storedBreakpoints.reduce((nonRestoredBreakpoints, bp) => {
 							if (!bp.restored) {
 								let { expression, path, observationExpression, enabled, id } = bp;
-
 								const node = path.split(".").reduce((parent, key) => {
 									return parent && parent[key];
 								}, detail.tree);
-
+								
 								// if node does not exist in tree, do not set up breakpoint
-								if (node && node.id) {
-									helpers.runDevtoolsFunction({
-										// indentation below is weird on purpose
-										// this is so it looks normal when a debugger is hit
-										fnString: `addBreakpoint(${helpers.getBreakpointEvalString({
+								if (node && typeof node.id !== undefined) {
+									// mark breakpoint once it has been restored so it will not be restored again
+									bp.restored = true;
+									nonRestoredBreakpoints.push(
+										helpers.getBreakpointEvalString({
 											expression,
 											selectedComponentStatement: `window.__CANJS_DEVTOOLS__.getComponentById(${node.id})`,
 											observationExpression,
@@ -274,27 +273,32 @@ export default class CanjsDevtoolsPanel extends StacheElement {
 											pathStatement: `"${path}"`,
 											enabled,
 											id
-										})})`,
-										success(result) {
-											const status = result.status;
-											const detail = result.detail;
-
-											switch (status) {
-												case "error":
-													vm.breakpointsError = detail;
-													break;
-												case "success":
-													vm.breakpoints = detail.breakpoints;
-
-													// mark breakpoint once it has been restored so it will not be restored again
-													bp.restored = true;
-													break;
-											}
-										}
-									});
+										})
+									);
 								}
 							}
-						});
+							return nonRestoredBreakpoints;
+						}, []);
+						if (breakpoints.length) {
+							helpers.runDevtoolsFunction({
+								// indentation below is weird on purpose
+								// this is so it looks normal when a debugger is hit
+								fnString: `addBreakpoints([${breakpoints.join(",")}])`,
+								success(result) {
+									const status = result.status;
+									const detail = result.detail;
+	
+									switch (status) {
+										case "error":
+											vm.breakpointsError = detail;
+											break;
+										case "success":
+											vm.breakpoints = detail.breakpoints;
+											break;
+										}
+									}
+							});
+						}
 						break;
 					}
 				}
