@@ -178,11 +178,13 @@
 			}
 		},
 
-		getBindingsGraphData(el, key) {
+		getBindingsGraphData(el, key, showInternalNodes = false) {
 			// if $0 is not in this frame, el will be null
 			if (!el) {
 				return this.makeIgnoreResponse("$0 is not in this frame");
 			}
+
+			console.log(`getBindingsGraphData(${el.nodeName}, ${key}, ${showInternalNodes})`);
 
 			// handle the user having devtools open and navigating to a page without can
 			if (!this.registered) {

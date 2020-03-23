@@ -18,6 +18,7 @@ class CanjsDevtoolsBindingsGraph extends StacheElement {
 				{{ else }}
 					<bindings-graph
 						graphData:from="this.graphData"
+						showInternalNodes:bind="this.showInternalNodes"
 						availableKeys:from="this.availableKeys"
 						selectedObj:from="this.selectedObj"
 						selectedKey:bind="this.selectedKey"
@@ -30,6 +31,8 @@ class CanjsDevtoolsBindingsGraph extends StacheElement {
 	static get props() {
 		return {
 			graphData: type.maybeConvert(ObservableObject),
+
+			showInternalNodes: false,
 
 			availableKeys: {
 				type: type.convert(ObservableArray),
@@ -50,7 +53,7 @@ class CanjsDevtoolsBindingsGraph extends StacheElement {
 
 		var loadGraphData = function() {
 			helpers.runDevtoolsFunction({
-				fnString: "getBindingsGraphData($0, '" + vm.selectedKey + "')",
+				fnString: "getBindingsGraphData($0, '" + vm.selectedKey + "', " + vm.showInternalNodes + ")",
 				success: function(result) {
 					var status = result.status;
 					var detail = result.detail;
@@ -97,6 +100,9 @@ class CanjsDevtoolsBindingsGraph extends StacheElement {
 
 		// update graph data when user selects a new property
 		this.listenTo("selectedKey", loadGraphData);
+
+		// update graph data when user toggles "Show Internal Nodes"
+		this.listenTo("showInternalNodes", loadGraphData);
 
 		return function() {
 			this.stopListening();
