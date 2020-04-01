@@ -10,7 +10,9 @@ import {
 	Observation,
 	Reflect,
 	StacheElement,
-	type
+	type,
+	CanMap,
+	CanList
 } from "can";
 import "../canjs-devtools-injected-script";
 
@@ -455,6 +457,42 @@ describe("canjs-devtools-injected-script", () => {
 				},
 				"gets correct messages"
 			);
+		});
+
+		it("getViewModelKeys filters keys started with '_'", () => {
+			class Custom extends StacheElement {
+				static get view() {
+					return "<p>{{ this.name }}</p>";
+				}
+		
+				static get props() {
+					return {
+						first: { type: String, default: "Kevin" },
+						last: { type: String, default: "McCallister" },
+						get name() {
+							return this.first + " " + this.last;
+						},
+						aCanMap: {
+							get default() {
+								return new CanMap({
+									foo: 'bar',
+									age: 38,
+									isTrue: false
+								})},
+							},
+							aList: {
+								get default() {
+									return new CanList(['foo', 'bar']);
+								}	
+							}
+					};
+				}
+			}
+			customElements.define("a-pp-6", Custom);
+			
+			const vm = new Custom().initialize();
+			assert.deepEqual(['foo', 'age', 'isTrue'], devtools.getViewModelKeys(vm.aCanMap));
+			assert.deepEqual([], devtools.getViewModelKeys(vm.aList));
 		});
 	});
 
