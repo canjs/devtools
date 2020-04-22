@@ -149,6 +149,27 @@ describe("canjs-devtools-helpers", () => {
 				done();
 			}, refreshInterval);
 		});
+
+		it("Doesn't eval when tabId is not the tabId", () => {
+			helpers.registeredFrames = { "www.one.com": {
+				tabId: 1234
+			}, "www.two.com": {
+				tabId: 1235
+			}};
+			chrome.devtools.tabId = 1234;
+			const teardown = helpers.runDevtoolsFunction({
+				fnString: "fooBar()"
+			});
+		
+			assert.equal(evalCalls.length, 1);
+		
+			assert.equal(evalCalls[0].fnString, "fooBar()");
+			assert.equal(evalCalls[0].url, "www.one.com");
+		
+			// clean up frameChangeHandlers so this doesn't break other tests
+			teardown();
+		
+		});
 	});
 
 	describe("getBreakpointEvalString", () => {
