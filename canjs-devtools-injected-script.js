@@ -520,15 +520,13 @@
 		getViewModelKeys(viewModel) {
 			if (canReflect.isListLike(viewModel)) {
 				return canReflect.getOwnEnumerableKeys(viewModel).filter(key => {
-					if (typeof key === 'string') {
-						return key.startsWith('_') === false;
-					}
+					return typeof key === 'string' && key.startsWith('_') === false;
 				});
 			}
 			
 			if (canReflect.isMapLike(viewModel)) {
 				return canReflect.getOwnKeys(viewModel).filter(key => {
-					return key.startsWith('_') === false;
+					return typeof key === 'string' && key.startsWith('_') === false;
 				});
 			}
 		},
