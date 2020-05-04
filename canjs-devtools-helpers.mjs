@@ -56,7 +56,9 @@ const helpers = {
 				}
 			};
 
-			if (helpers.registeredFrames[url]) {
+			if (helpers.registeredFrames[url] && 
+				chrome.devtools.tabId === helpers.registeredFrames[url].tabId
+			) {
 				chrome.devtools.inspectedWindow.eval(
 					`typeof __CANJS_DEVTOOLS__ === 'object' && __CANJS_DEVTOOLS__.${
 						options.fn ? options.fn() : options.fnString
